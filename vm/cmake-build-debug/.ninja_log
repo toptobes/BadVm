@@ -1,0 +1,4 @@
+# ninja log v5
+4	153	7030308222976855	CMakeFiles/vm.dir/src/main.c.obj	a7e800676256c4c4
+4	152	7030309377998603	CMakeFiles/vm.dir/src/vm/mem.c.obj	e2a04c5139e8ec00
+162	373	7030309380175937	vm.exe	1f416dcc7dc870c7
