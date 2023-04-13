@@ -55,17 +55,29 @@ build CMakeFiles/vm.dir/src/main.c.obj: C_COMPILER__vm_Debug C$:/Users/wanna/Doc
   OBJECT_DIR = CMakeFiles\vm.dir
   OBJECT_FILE_DIR = CMakeFiles\vm.dir\src
 
-build CMakeFiles/vm.dir/src/vm/mem.c.obj: C_COMPILER__vm_Debug C$:/Users/wanna/Documents/GitHub/BadVm/vm/src/vm/mem.c || cmake_object_order_depends_target_vm
-  DEP_FILE = CMakeFiles\vm.dir\src\vm\mem.c.obj.d
+build CMakeFiles/vm.dir/src/vm/memory/mem.c.obj: C_COMPILER__vm_Debug C$:/Users/wanna/Documents/GitHub/BadVm/vm/src/vm/memory/mem.c || cmake_object_order_depends_target_vm
+  DEP_FILE = CMakeFiles\vm.dir\src\vm\memory\mem.c.obj.d
   FLAGS = -g -std=gnu99
   OBJECT_DIR = CMakeFiles\vm.dir
-  OBJECT_FILE_DIR = CMakeFiles\vm.dir\src\vm
+  OBJECT_FILE_DIR = CMakeFiles\vm.dir\src\vm\memory
 
-build CMakeFiles/vm.dir/src/vm/cpu.c.obj: C_COMPILER__vm_Debug C$:/Users/wanna/Documents/GitHub/BadVm/vm/src/vm/cpu.c || cmake_object_order_depends_target_vm
-  DEP_FILE = CMakeFiles\vm.dir\src\vm\cpu.c.obj.d
+build CMakeFiles/vm.dir/src/vm/cpu/cpu.c.obj: C_COMPILER__vm_Debug C$:/Users/wanna/Documents/GitHub/BadVm/vm/src/vm/cpu/cpu.c || cmake_object_order_depends_target_vm
+  DEP_FILE = CMakeFiles\vm.dir\src\vm\cpu\cpu.c.obj.d
   FLAGS = -g -std=gnu99
   OBJECT_DIR = CMakeFiles\vm.dir
-  OBJECT_FILE_DIR = CMakeFiles\vm.dir\src\vm
+  OBJECT_FILE_DIR = CMakeFiles\vm.dir\src\vm\cpu
+
+build CMakeFiles/vm.dir/src/vm/cpu/stack.c.obj: C_COMPILER__vm_Debug C$:/Users/wanna/Documents/GitHub/BadVm/vm/src/vm/cpu/stack.c || cmake_object_order_depends_target_vm
+  DEP_FILE = CMakeFiles\vm.dir\src\vm\cpu\stack.c.obj.d
+  FLAGS = -g -std=gnu99
+  OBJECT_DIR = CMakeFiles\vm.dir
+  OBJECT_FILE_DIR = CMakeFiles\vm.dir\src\vm\cpu
+
+build CMakeFiles/vm.dir/src/vm/cpu/opcodes.c.obj: C_COMPILER__vm_Debug C$:/Users/wanna/Documents/GitHub/BadVm/vm/src/vm/cpu/opcodes.c || cmake_object_order_depends_target_vm
+  DEP_FILE = CMakeFiles\vm.dir\src\vm\cpu\opcodes.c.obj.d
+  FLAGS = -g -std=gnu99
+  OBJECT_DIR = CMakeFiles\vm.dir
+  OBJECT_FILE_DIR = CMakeFiles\vm.dir\src\vm\cpu
 
 
 # =============================================================================
@@ -75,7 +87,7 @@ build CMakeFiles/vm.dir/src/vm/cpu.c.obj: C_COMPILER__vm_Debug C$:/Users/wanna/D
 #############################################
 # Link the executable vm.exe
 
-build vm.exe: C_EXECUTABLE_LINKER__vm_Debug CMakeFiles/vm.dir/src/main.c.obj CMakeFiles/vm.dir/src/vm/mem.c.obj CMakeFiles/vm.dir/src/vm/cpu.c.obj
+build vm.exe: C_EXECUTABLE_LINKER__vm_Debug CMakeFiles/vm.dir/src/main.c.obj CMakeFiles/vm.dir/src/vm/memory/mem.c.obj CMakeFiles/vm.dir/src/vm/cpu/cpu.c.obj CMakeFiles/vm.dir/src/vm/cpu/stack.c.obj CMakeFiles/vm.dir/src/vm/cpu/opcodes.c.obj
   FLAGS = -g
   LINK_LIBRARIES = -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
   OBJECT_DIR = CMakeFiles\vm.dir
