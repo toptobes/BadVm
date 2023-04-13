@@ -1,11 +1,13 @@
 #include <malloc.h>
+#include <conio.h>
 #include "cpu.h"
+#include "../debug.h"
 
 cpu_t *cpu_new(mem_t *mem){
     cpu_t *cpu = malloc(sizeof *cpu);
     cpu->mem = mem;
 
-    flags_t flags = {0 };
+    flags_t flags = { 0 };
     cpu->flags = flags;
 
     for (int i = 0; i < NUM_REGISTERS; i++) {
@@ -13,53 +15,44 @@ cpu_t *cpu_new(mem_t *mem){
     }
 
     opcodes_init(cpu);
-    stack_init(cpu, 0xff);
+    stack_init(cpu, STACK_START);
     return cpu;
 }
 
-void cpu_dump_registers(cpu_t *cpu) {
-    printf("ip: 0x%04x ", cpu->registers[ip]);
-    printf("sp: 0x%04x ", cpu->registers[sp]);
-    printf("bp: 0x%04x ", cpu->registers[bp]);
-    printf("ax: 0x%04x ", cpu->registers[ax]);
-    printf("bx: 0x%04x ", cpu->registers[bx]);
-    printf("cx: 0x%04x ", cpu->registers[cx]);
-    printf("dx: 0x%04x ", cpu->registers[dx]);
-    puts("");
-}
-
-void cpu_dump_stack(cpu_t *cpu) {
-    printf("stack:\n");
-    for (int i = 0; i < 12; i += 2) {
-        printf("  #%04x: 0x%04x\n", 0xff - i, mem_read_word(cpu->mem, 0xff - i));
-    }
-}
-
-#define CPU_DUMP_ALL
+#define CPU_DEBUG (CPU_DEBUG_STEP_MANUALLY | CPU_DEBUG_DUMP_ALL)
 
 void cpu_step(cpu_t *cpu) {
     byte opcode = cpu_read_byte();
     cpu->opcodes[opcode](cpu);
 
-    #if defined(CPU_DUMP_OPCODE)    || defined(CPU_DUMP_ALL)
-        printf("opcode: %x\n", opcode);
-    #endif
-
-    #if defined(CPU_DUMP_REGISTERS) || defined(CPU_DUMP_ALL)
-        cpu_dump_registers(cpu);
-    #endif
-
-    #if defined(CPU_DUMP_STACK)     || defined(CPU_DUMP_ALL)
-        cpu_dump_stack(cpu);
-    #endif
-
-    #if  defined(CPU_DUMP_REGISTERS) || defined(CPU_DUMP_STACK) || defined(CPU_DUMP_OPCODE) || defined(CPU_DUMP_ALL)
-        printf("====================\n");
+    #if CPU_DEBUG & CPU_DEBUG_DUMP_ALL
+        printf("\n=========%03d=========\n", ++stack_count);
+        CPU_DUMP_OPCODE(opcode);
+        CPU_DUMP_REGISTERS(cpu);
+        CPU_DUMP_STACK(cpu);
+        printf("=====================\n");
     #endif
 }
 
-void cpu_run(cpu_t *cpu) {
+word cpu_run(cpu_t *cpu) {
+    #if CPU_DEBUG & CPU_DEBUG_DUMP_ALL
+        printf("\n========START========\n");
+        CPU_DUMP_REGISTERS(cpu);
+        CPU_DUMP_STACK(cpu);
+        printf("=====================\n");
+    #endif
+
     while (!cpu->flags.stop) {
+        #if CPU_DEBUG & CPU_DEBUG_STEP_MANUALLY
+            getch();
+        #endif
+
         cpu_step(cpu);
     }
+
+    #if CPU_DEBUG & CPU_DEBUG_DUMP_ALL
+        puts("");
+    #endif
+
+    return cpu->registers[ax];
 }

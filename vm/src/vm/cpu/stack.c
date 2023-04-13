@@ -22,12 +22,12 @@ void stack_push_frame(cpu_t *cpu) {
     stack_push(cpu, old_bp_adr);
     cpu->registers[bp] = new_bp_adr;
 
-    word return_address = cpu->registers[ip] + 1;
+    word return_address = cpu->registers[ip];
     stack_push(cpu, return_address);
 }
 
 word stack_pop_frame(cpu_t *cpu) {
-    cpu->registers[bp] = stack_pop(cpu);
     word ip_return_adr = stack_pop(cpu);
+    cpu->registers[bp] = stack_pop(cpu);
     return ip_return_adr;
 }

@@ -5,9 +5,11 @@
 #include "../memory/mem.h"
 
 #define NUM_REGISTERS 7
+#define STACK_START 0xff
 
 struct cpu_t;
-typedef void (*opcode_impl)(struct cpu_t* cpu);
+
+#include "opcodes/opcodes.h"
 
 typedef struct {
     unsigned stop : 1;
@@ -28,39 +30,11 @@ typedef enum {
     cx, dx,
 } reg_t;
 
-typedef enum {
-    halt = 0x0,
-
-    mov_reg_reg = 0x10,
-    mov_imm_reg,
-    mov_reg_mem,
-    mov_mem_reg,
-
-    add_reg_reg = 0x20,
-
-    jmp_not_eql = 0x30,
-
-    stk_psh_reg = 0x40,
-    stk_psh_imm,
-    stk_pop_reg,
-    call_reg,
-    call_imm,
-    ret,
-
-    cmp = 0x50,
-} opcode_t;
-
 // -- GENERAL CPU STUFF --
 cpu_t *cpu_new(mem_t *mem);
 
 void cpu_step(cpu_t *cpu);
-void cpu_run(cpu_t *cpu);
-
-void cpu_dump_registers(cpu_t *cpu);
-void cpu_dump_stack(cpu_t *cpu);
-
-// -- OPCODE STUFF --
-void opcodes_init(cpu_t *cpu);
+word cpu_run(cpu_t *cpu);
 
 // -- STACK STUFF --
 void stack_init(cpu_t *cpu, word start);

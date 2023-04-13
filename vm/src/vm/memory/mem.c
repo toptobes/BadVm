@@ -1,6 +1,5 @@
 #include <malloc.h>
 #include "mem.h"
-#include "stdio.h"
 
 mem_t *mem_new(size_t size) {
     mem_t *mem = malloc(sizeof *mem);
