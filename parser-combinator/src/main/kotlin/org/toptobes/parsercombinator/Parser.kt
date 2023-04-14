@@ -1,7 +1,5 @@
 package org.toptobes.parsercombinator
 
-import org.toptobes.Context
-
 data class ParseState<T, R>(
     val result: R?,
     val target: T,
@@ -64,3 +62,17 @@ abstract class Parser<Target, out NewT> {
         }
     }
 }
+
+class Context<T, R>(target: T) {
+    var state: ParseState<T, out R> = ParseState(null, target, 0)
+        private set
+
+    infix fun parse(parser: Parser<T, R>): R? {
+        val nextState = parser.parsePropagating(state)
+        state = nextState
+        return nextState.result
+    }
+}
+
+fun <T, R, F> contextual(target: T, fn: (Context<T, R>) -> F): F =
+    fn(Context(target))
