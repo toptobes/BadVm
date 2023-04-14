@@ -73,11 +73,59 @@ build CMakeFiles/vm.dir/src/vm/cpu/stack.c.obj: C_COMPILER__vm_Debug C$:/Users/w
   OBJECT_DIR = CMakeFiles\vm.dir
   OBJECT_FILE_DIR = CMakeFiles\vm.dir\src\vm\cpu
 
-build CMakeFiles/vm.dir/src/vm/cpu/opcodes.c.obj: C_COMPILER__vm_Debug C$:/Users/wanna/Documents/GitHub/BadVm/vm/src/vm/cpu/opcodes.c || cmake_object_order_depends_target_vm
-  DEP_FILE = CMakeFiles\vm.dir\src\vm\cpu\opcodes.c.obj.d
+build CMakeFiles/vm.dir/src/vm/cpu/opcodes/opcodes.c.obj: C_COMPILER__vm_Debug C$:/Users/wanna/Documents/GitHub/BadVm/vm/src/vm/cpu/opcodes/opcodes.c || cmake_object_order_depends_target_vm
+  DEP_FILE = CMakeFiles\vm.dir\src\vm\cpu\opcodes\opcodes.c.obj.d
   FLAGS = -g -std=gnu99
   OBJECT_DIR = CMakeFiles\vm.dir
-  OBJECT_FILE_DIR = CMakeFiles\vm.dir\src\vm\cpu
+  OBJECT_FILE_DIR = CMakeFiles\vm.dir\src\vm\cpu\opcodes
+
+build CMakeFiles/vm.dir/src/vm/cpu/opcodes/opcodes_impls_movs.c.obj: C_COMPILER__vm_Debug C$:/Users/wanna/Documents/GitHub/BadVm/vm/src/vm/cpu/opcodes/opcodes_impls_movs.c || cmake_object_order_depends_target_vm
+  DEP_FILE = CMakeFiles\vm.dir\src\vm\cpu\opcodes\opcodes_impls_movs.c.obj.d
+  FLAGS = -g -std=gnu99
+  OBJECT_DIR = CMakeFiles\vm.dir
+  OBJECT_FILE_DIR = CMakeFiles\vm.dir\src\vm\cpu\opcodes
+
+build CMakeFiles/vm.dir/src/vm/cpu/opcodes/opcodes_impls_math.c.obj: C_COMPILER__vm_Debug C$:/Users/wanna/Documents/GitHub/BadVm/vm/src/vm/cpu/opcodes/opcodes_impls_math.c || cmake_object_order_depends_target_vm
+  DEP_FILE = CMakeFiles\vm.dir\src\vm\cpu\opcodes\opcodes_impls_math.c.obj.d
+  FLAGS = -g -std=gnu99
+  OBJECT_DIR = CMakeFiles\vm.dir
+  OBJECT_FILE_DIR = CMakeFiles\vm.dir\src\vm\cpu\opcodes
+
+build CMakeFiles/vm.dir/src/vm/cpu/opcodes/opcodes_impls_stack.c.obj: C_COMPILER__vm_Debug C$:/Users/wanna/Documents/GitHub/BadVm/vm/src/vm/cpu/opcodes/opcodes_impls_stack.c || cmake_object_order_depends_target_vm
+  DEP_FILE = CMakeFiles\vm.dir\src\vm\cpu\opcodes\opcodes_impls_stack.c.obj.d
+  FLAGS = -g -std=gnu99
+  OBJECT_DIR = CMakeFiles\vm.dir
+  OBJECT_FILE_DIR = CMakeFiles\vm.dir\src\vm\cpu\opcodes
+
+build CMakeFiles/vm.dir/src/vm/cpu/opcodes/opcodes_impls_jmps.c.obj: C_COMPILER__vm_Debug C$:/Users/wanna/Documents/GitHub/BadVm/vm/src/vm/cpu/opcodes/opcodes_impls_jmps.c || cmake_object_order_depends_target_vm
+  DEP_FILE = CMakeFiles\vm.dir\src\vm\cpu\opcodes\opcodes_impls_jmps.c.obj.d
+  FLAGS = -g -std=gnu99
+  OBJECT_DIR = CMakeFiles\vm.dir
+  OBJECT_FILE_DIR = CMakeFiles\vm.dir\src\vm\cpu\opcodes
+
+build CMakeFiles/vm.dir/src/vm/cpu/opcodes/opcodes_impls_special.c.obj: C_COMPILER__vm_Debug C$:/Users/wanna/Documents/GitHub/BadVm/vm/src/vm/cpu/opcodes/opcodes_impls_special.c || cmake_object_order_depends_target_vm
+  DEP_FILE = CMakeFiles\vm.dir\src\vm\cpu\opcodes\opcodes_impls_special.c.obj.d
+  FLAGS = -g -std=gnu99
+  OBJECT_DIR = CMakeFiles\vm.dir
+  OBJECT_FILE_DIR = CMakeFiles\vm.dir\src\vm\cpu\opcodes
+
+build CMakeFiles/vm.dir/src/vm/cpu/opcodes/opcodes_impls_tests.c.obj: C_COMPILER__vm_Debug C$:/Users/wanna/Documents/GitHub/BadVm/vm/src/vm/cpu/opcodes/opcodes_impls_tests.c || cmake_object_order_depends_target_vm
+  DEP_FILE = CMakeFiles\vm.dir\src\vm\cpu\opcodes\opcodes_impls_tests.c.obj.d
+  FLAGS = -g -std=gnu99
+  OBJECT_DIR = CMakeFiles\vm.dir
+  OBJECT_FILE_DIR = CMakeFiles\vm.dir\src\vm\cpu\opcodes
+
+build CMakeFiles/vm.dir/src/vm/memory/memmap.c.obj: C_COMPILER__vm_Debug C$:/Users/wanna/Documents/GitHub/BadVm/vm/src/vm/memory/memmap.c || cmake_object_order_depends_target_vm
+  DEP_FILE = CMakeFiles\vm.dir\src\vm\memory\memmap.c.obj.d
+  FLAGS = -g -std=gnu99
+  OBJECT_DIR = CMakeFiles\vm.dir
+  OBJECT_FILE_DIR = CMakeFiles\vm.dir\src\vm\memory
+
+build CMakeFiles/vm.dir/src/vm/cpu/opcodes/opcodes_impls_logic.c.obj: C_COMPILER__vm_Debug C$:/Users/wanna/Documents/GitHub/BadVm/vm/src/vm/cpu/opcodes/opcodes_impls_logic.c || cmake_object_order_depends_target_vm
+  DEP_FILE = CMakeFiles\vm.dir\src\vm\cpu\opcodes\opcodes_impls_logic.c.obj.d
+  FLAGS = -g -std=gnu99
+  OBJECT_DIR = CMakeFiles\vm.dir
+  OBJECT_FILE_DIR = CMakeFiles\vm.dir\src\vm\cpu\opcodes
 
 
 # =============================================================================
@@ -87,7 +135,7 @@ build CMakeFiles/vm.dir/src/vm/cpu/opcodes.c.obj: C_COMPILER__vm_Debug C$:/Users
 #############################################
 # Link the executable vm.exe
 
-build vm.exe: C_EXECUTABLE_LINKER__vm_Debug CMakeFiles/vm.dir/src/main.c.obj CMakeFiles/vm.dir/src/vm/memory/mem.c.obj CMakeFiles/vm.dir/src/vm/cpu/cpu.c.obj CMakeFiles/vm.dir/src/vm/cpu/stack.c.obj CMakeFiles/vm.dir/src/vm/cpu/opcodes.c.obj
+build vm.exe: C_EXECUTABLE_LINKER__vm_Debug CMakeFiles/vm.dir/src/main.c.obj CMakeFiles/vm.dir/src/vm/memory/mem.c.obj CMakeFiles/vm.dir/src/vm/cpu/cpu.c.obj CMakeFiles/vm.dir/src/vm/cpu/stack.c.obj CMakeFiles/vm.dir/src/vm/cpu/opcodes/opcodes.c.obj CMakeFiles/vm.dir/src/vm/cpu/opcodes/opcodes_impls_movs.c.obj CMakeFiles/vm.dir/src/vm/cpu/opcodes/opcodes_impls_math.c.obj CMakeFiles/vm.dir/src/vm/cpu/opcodes/opcodes_impls_stack.c.obj CMakeFiles/vm.dir/src/vm/cpu/opcodes/opcodes_impls_jmps.c.obj CMakeFiles/vm.dir/src/vm/cpu/opcodes/opcodes_impls_special.c.obj CMakeFiles/vm.dir/src/vm/cpu/opcodes/opcodes_impls_tests.c.obj CMakeFiles/vm.dir/src/vm/memory/memmap.c.obj CMakeFiles/vm.dir/src/vm/cpu/opcodes/opcodes_impls_logic.c.obj
   FLAGS = -g
   LINK_LIBRARIES = -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
   OBJECT_DIR = CMakeFiles\vm.dir

@@ -18,12 +18,9 @@ fun play() {
 
     lateinit var p5: Parser<String, String>
     val choices = lazy {
-        any(p5, between(-whitespace, letters))
+        any(p5, between(!whitespace, letters))
     }
     p5 = between.squareBrackets(sepBy.whitespaceInsensitiveCommas(choices)).map { it.toString() }
 
 //    p5.log("[a, b, [c]]")
-
-    val result = interpret("(+ 1 2 (* 3 4 5) 6)")
-    println(result)
 }

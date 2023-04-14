@@ -28,11 +28,11 @@ infix fun <Target, NewT> sequence<Target, NewT>.then(other: Parser<Target, NewT>
 operator fun <Target, NewT> Parser<Target, NewT>.unaryPlus() =
     repeatedly(this)
 
-operator fun <Target, NewT> Parser<Target, NewT>.unaryMinus() =
+operator fun <Target, NewT> Parser<Target, NewT>.not() =
     optionally(this)
 
-operator fun <NewT> Parser<String, NewT>.not() =
-    between(-whitespace, this)
+operator fun <NewT> Parser<String, NewT>.unaryMinus() =
+    between(!whitespace, this)
 
 operator fun <Target,NewT> Parser<Target, NewT>.times(times: Int) =
     repeat(this, times)
