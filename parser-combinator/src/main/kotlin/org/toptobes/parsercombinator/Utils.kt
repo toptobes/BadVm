@@ -41,3 +41,6 @@ operator fun <T,R> Parser<T, R>.times(times: Int) =
     repeat(this, times)
 
 val optionalWhitespace = optionally(whitespace, "")
+
+infix fun <T, R> Parser<T, R>.or(other: Parser<T, R>) =
+    any(this, other)

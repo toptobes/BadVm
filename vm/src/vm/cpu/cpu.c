@@ -4,37 +4,20 @@
 #include "cpu.h"
 #include "../debug.h"
 
-static void mem_init(cpu_t *cpu, mem_t *mem);
-
-cpu_t *cpu_new(mem_t *mem){
+cpu_t *cpu_new(mem_map_t *mmap){
     cpu_t *cpu = malloc(sizeof *cpu);
 
     flags_t flags = { 0 };
     cpu->flags = flags;
+    cpu->mmap = mmap;
 
     for (int i = 0; i < NUM_REGISTERS; i++) {
         cpu_reg16(i) = 0;
     }
 
-    mem_init(cpu, mem);
     opcodes_init(cpu);
     stack_init(cpu, STACK_START);
     return cpu;
-}
-
-static void mem_init(cpu_t *cpu ,mem_t *mem) {
-    mm_device_t *device = malloc(sizeof *device);
-    device->raw_device = mem;
-    device->read_byte  = (byte (*)(void *, int)) mem_read_byte;
-    device->read_word  = (word (*)(void *, int)) mem_read_word;
-    device->write_byte = (void (*)(void *, int, byte)) mem_write_byte;
-    device->write_word = (void (*)(void *, int, word)) mem_write_word;
-
-    mm_mapping_t *mapping = mm_mapping_new(device, 0, mem->size);
-    mem_map_t *map = mem_map_new();
-    mmap_add(map, mapping);
-
-    cpu->mmap = map;
 }
 
 int stack_count = 0;

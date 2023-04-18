@@ -40,7 +40,7 @@ typedef enum {
 } reg8_t;
 
 // -- GENERAL CPU STUFF --
-cpu_t *cpu_new(mem_t *mem);
+cpu_t *cpu_new(mem_map_t *mmap);
 
 void cpu_step(cpu_t *cpu);
 word cpu_run(cpu_t *cpu);

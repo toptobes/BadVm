@@ -1,18 +1,20 @@
 package org.toptobes.lang.parsers
 
-import org.toptobes.lang.*
+import org.toptobes.lang.Instruction
+import org.toptobes.lang.Node
+import org.toptobes.lang.Operand
+import org.toptobes.lang.instructionParsers
+import org.toptobes.lang.utils.Either
 import org.toptobes.parsercombinator.*
-import org.toptobes.parsercombinator.impls.any
 import org.toptobes.parsercombinator.impls.str
-import org.toptobes.utils.Either
 
-val parserMap = mapOf(
-    REG16 to reg16,
-    REG8  to reg8,
-    IMM16 to imm16,
-    IMM8  to imm8,
-    MEM   to mem,
-    PTR   to ptr,
+val argsParserMap = mapOf(
+    "REG16" to reg16,
+    "REG8"  to reg8,
+    "IMM16" to imm16,
+    "IMM8"  to imm8,
+    "MEM"   to mem,
+    "PTR"   to ptr,
 )
 
 fun parseInstructions(instructions: String) : Either<ErrorResult, List<Node>> =
@@ -22,7 +24,7 @@ fun parseInstructions(instructions: String) : Either<ErrorResult, List<Node>> =
         .map(String::trim)
         .filter { !it.startsWith("--") }
         .map { it.substringBefore("--") }
-        .map { any(instructionParser(), labelDefinition, variableWordDef, variableByteDef, constWordDef, constByteDef)(it) }
+        .map { (instructionParser() or definitionParser())(it) }
         .map { if (it.isErrored) return Either.Left(it.error!!) else it.result!! }
         .let { Either.Right(it) }
 
@@ -40,14 +42,14 @@ class instructionParser : Parser<String, Instruction>() {
 }
 
 fun createInstructionParser(name: String, vararg args: String) = contextual { ctx ->
-    (ctx parse -str(name)) ?: error("Not a mov instruction")
+    (ctx parse -str(name)) ?: crash("Not an instruction")
 
     val parsedArgs = args.foldIndexed(emptyList<Operand>()) { idx, acc, arg ->
-        val parser = parserMap[arg.uppercase()] ?: error("No parser found for instruction $arg")
-        val parsed = (ctx parse parser) ?: error("Error with arg #$idx: ${ctx.state.error}")
+        val parser = argsParserMap[arg.uppercase()] ?: crash("No parser found for arg #$idx '$arg' for $name")
+        val parsed = (ctx parse parser) ?: fail("Error with arg #$idx ($arg) for $name: ${ctx.state.error?.rootCause()}")
 
         if (idx != args.size - 1) {
-            (ctx parse -str(',')) ?: error("No expected comma")
+            (ctx parse -str(',')) ?: crash("No expected comma")
         }
 
         acc + parsed

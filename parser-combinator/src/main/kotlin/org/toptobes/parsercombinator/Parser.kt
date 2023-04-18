@@ -1,6 +1,6 @@
 package org.toptobes.parsercombinator
 
-import org.toptobes.utils.Either
+import org.toptobes.lang.utils.Either
 
 data class ParseState<T, R>(
     val result: R?,
@@ -111,17 +111,17 @@ private class ContextualParseSuccess(val result: Any?) : Exception()
 private class ContextualParseError(val errorInf: Any?) : Exception()
 
 class ContextScope<E, R> {
-    fun error(err: String): Nothing {
+    fun fail(err: String): Nothing {
         throw ContextualParseError(object : ErrorResult {
             override fun toString() = err
         })
     }
 
-    fun error(err: ErrorResult): Nothing {
+    fun fail(err: ErrorResult): Nothing {
         throw ContextualParseError(err)
     }
 
-    fun fail(err: String): Nothing {
+    fun crash(err: String): Nothing {
         throw IllegalStateException(err)
     }
 

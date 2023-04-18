@@ -8,13 +8,12 @@ import java.io.File
 data class InstructionMetadata(val mnemonic: String, val tag: String, val opcode: Byte, val size: Int, val parser: Parser<String, Instruction>)
 
 val argSizes = mapOf(
-    REG16 to 1,
-    REG8  to 1,
-    IMM8  to 1,
-    PTR   to 1,
-    IMM16 to 2,
-    MEM   to 2,
-    LABEL to 2,
+    "REG16" to 1,
+    "REG8"  to 1,
+    "IMM8"  to 1,
+    "IMM16" to 2,
+    "MEM"   to 2,
+    "PTR"   to 1,
 )
 
 val rawInstructions = File("../opcodes")
