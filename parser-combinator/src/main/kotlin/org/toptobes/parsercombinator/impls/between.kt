@@ -29,13 +29,13 @@ class between<Target, NewT>(
 
     companion object {
         fun <NewT> squareBrackets(content: Parser<String, NewT>) =
-            between(str("["), content, str("]"))
+            between(-str("["), content, -str("]"))
 
         fun <NewT> curlyBrackets(content: Parser<String, NewT>) =
-            between(str("{"), content, str("}"))
+            between(-str("{"), content, -str("}"))
 
         fun <NewT> parentheses(content: Parser<String, NewT>) =
-            between(str("("), content, str(")"))
+            between(-str("("), content, -str(")"))
 
         fun <NewT> doubleQuotes(content: Parser<String, NewT>) =
             between(str("\""), content, str("\""))

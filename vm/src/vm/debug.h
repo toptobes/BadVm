@@ -5,8 +5,6 @@
 //#define CPU_DEBUG_TIME_LOOPS
 //#define CPU_DEBUG_STEP_MANUALLY
 
-int stack_count = 0;
-
 #define CPU_DUMP_REGISTERS(cpu) do {        \
     printf("ip: 0x%04x ", cpu_reg16(ip));   \
     printf("sp: 0x%04x ", cpu_reg16(sp));   \
@@ -21,7 +19,7 @@ int stack_count = 0;
 #define CPU_DUMP_STACK(cpu) do {                                                                      \
     printf("stack:\n");                                                                               \
     for (int i = -4; i < 8; i += 2) {                                                                 \
-        if (cpu_reg16(sp) < i || STACK_START < cpu_reg16(sp) - i)                                 \
+        if (cpu_reg16(sp) < i || STACK_START < cpu_reg16(sp) - i)                                     \
             continue;                                                                                 \
                                                                                                       \
         printf("  #%04x: 0x%04x", cpu_reg16(sp) - i, mmap_read_word(cpu->mmap, cpu_reg16(sp) - i));   \
@@ -37,8 +35,8 @@ int stack_count = 0;
     }                                                                                                 \
 } while(0)
 
-#define CPU_DUMP_OPCODE(opcode) do { \
-    printf("opcode: %d\n", opcode);  \
+#define CPU_DUMP_OPCODE(opcode) do {                                  \
+    printf("opcode: %d (%s)\n", opcode, opcode_name_lookup[opcode]);  \
 } while(0)
 
 #endif //VM_DEBUG_H

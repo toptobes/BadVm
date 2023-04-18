@@ -37,6 +37,8 @@ static void mem_init(cpu_t *cpu ,mem_t *mem) {
     cpu->mmap = map;
 }
 
+int stack_count = 0;
+
 void cpu_step(cpu_t *cpu) {
     #ifdef CPU_DEBUG_TIME_LOOPS
         clock_t begin = clock();
@@ -61,6 +63,8 @@ void cpu_step(cpu_t *cpu) {
 }
 
 word cpu_run(cpu_t *cpu) {
+    cpu_reg16(ip) = cpu_read_word();
+
     #ifdef CPU_DEBUG_DUMP_ALL
         printf("\n========START========\n");
         CPU_DUMP_REGISTERS(cpu);

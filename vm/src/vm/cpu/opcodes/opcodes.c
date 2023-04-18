@@ -1,5 +1,7 @@
 #include "opcodes.h"
 
+char *opcode_name_lookup[256];
+
 void opcodes_init(struct cpu_t *cpu) {
     init_mov_opcodes(cpu);
     init_math_opcodes(cpu);

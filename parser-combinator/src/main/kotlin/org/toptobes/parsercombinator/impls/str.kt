@@ -3,6 +3,8 @@ package org.toptobes.parsercombinator.impls
 import org.toptobes.parsercombinator.*
 
 class str(val pattern: String) : Parser<String, String>() {
+    constructor(pattern: Char) : this(pattern.toString())
+
     override fun parse(oldState: ParseState<String, *>): ParseState<String, out String> {
         val subtarget = oldState.target.substring(oldState.index)
 

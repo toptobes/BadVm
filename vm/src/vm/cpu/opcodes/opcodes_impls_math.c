@@ -74,16 +74,16 @@ OPCODE_IMPL(mul_imm8_reg8) {
 }
 
 void init_math_opcodes(struct cpu_t *cpu) {
-    cpu->opcodes[add_reg16_reg16] = add_reg16_reg16_impl;
-    cpu->opcodes[add_imm16_reg16] = add_imm16_reg16_impl;
-    cpu->opcodes[sub_reg16_reg16] = sub_reg16_reg16_impl;
-    cpu->opcodes[sub_imm16_reg16] = sub_imm16_reg16_impl;
-    cpu->opcodes[mul_reg16_reg16] = mul_reg16_reg16_impl;
-    cpu->opcodes[mul_imm16_reg16] = mul_imm16_reg16_impl;
-    cpu->opcodes[add_reg8_reg8] = add_reg8_reg8_impl;
-    cpu->opcodes[add_imm8_reg8] = add_imm8_reg8_impl;
-    cpu->opcodes[sub_reg8_reg8] = sub_reg8_reg8_impl;
-    cpu->opcodes[sub_imm8_reg8] = sub_imm8_reg8_impl;
-    cpu->opcodes[mul_reg8_reg8] = mul_reg8_reg8_impl;
-    cpu->opcodes[mul_imm8_reg8] = mul_imm8_reg8_impl;
+    ASSIGN_OPCODE(add_reg16_reg16, add_reg16_reg16_impl);
+    ASSIGN_OPCODE(add_imm16_reg16, add_imm16_reg16_impl);
+    ASSIGN_OPCODE(sub_reg16_reg16, sub_reg16_reg16_impl);
+    ASSIGN_OPCODE(sub_imm16_reg16, sub_imm16_reg16_impl);
+    ASSIGN_OPCODE(mul_reg16_reg16, mul_reg16_reg16_impl);
+    ASSIGN_OPCODE(mul_imm16_reg16, mul_imm16_reg16_impl);
+    ASSIGN_OPCODE(add_reg8_reg8, add_reg8_reg8_impl);
+    ASSIGN_OPCODE(add_imm8_reg8, add_imm8_reg8_impl);
+    ASSIGN_OPCODE(sub_reg8_reg8, sub_reg8_reg8_impl);
+    ASSIGN_OPCODE(sub_imm8_reg8, sub_imm8_reg8_impl);
+    ASSIGN_OPCODE(mul_reg8_reg8, mul_reg8_reg8_impl);
+    ASSIGN_OPCODE(mul_imm8_reg8, mul_imm8_reg8_impl);
 }

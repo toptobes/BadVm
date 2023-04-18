@@ -30,7 +30,14 @@ typedef enum {
     sp, bp,
     ax, bx,
     cx, dx,
-} reg_t;
+} reg16_t;
+
+typedef enum {
+    ah, al,
+    bh, bl,
+    ch, cl,
+    dh, dl,
+} reg8_t;
 
 // -- GENERAL CPU STUFF --
 cpu_t *cpu_new(mem_t *mem);

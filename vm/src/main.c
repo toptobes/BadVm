@@ -34,42 +34,12 @@ int main() {
 
     mmap_add(cpu->mmap, mapping);
 
-#define cpu_write_byte(b) (mmap_write_byte(cpu->mmap, i++, b))
-#define cpu_write_word(w) (i += 2, mmap_write_word(cpu->mmap, i - 2, w))
+    byte instructions[] = {
+        #include "../../out"
+    };
+    for (int i = 0; i < (sizeof instructions / sizeof *instructions); i++) {
+        mmap_write_byte(cpu->mmap, i, instructions[i]);
+    }
 
-    int i = 0;
-    cpu_write_byte(mov_imm16_reg16);
-    cpu_write_byte(ax);
-    cpu_write_word(3);
-
-    cpu_write_byte(mov_imm16_reg16);
-    cpu_write_byte(bx);
-    cpu_write_word(2);
-
-    cpu_write_byte(cmp_reg16_reg16);
-    cpu_write_byte(ax);
-    cpu_write_byte(bx);
-
-    cpu_write_byte(jlt_imm);
-    cpu_write_word(23);
-
-    cpu_write_byte(mov_imm16_reg16);
-    cpu_write_byte(cx);
-    cpu_write_word('n');
-
-    cpu_write_byte(mov_reg16_mem);
-    cpu_write_word(400);
-    cpu_write_byte(cx);
-
-    cpu_write_byte(halt);
-
-    cpu_write_byte(mov_imm16_reg16);
-    cpu_write_byte(cx);
-    cpu_write_word('y');
-
-    cpu_write_byte(mov_reg16_mem);
-    cpu_write_word(400);
-    cpu_write_byte(cx);
-
-    cpu_run(cpu);
+    return cpu_run(cpu);
 }

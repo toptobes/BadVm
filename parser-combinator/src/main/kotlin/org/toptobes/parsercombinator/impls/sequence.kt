@@ -23,13 +23,6 @@ class sequence<Target, NewT>(vararg val parsers: Parser<Target, NewT>, val onErr
                         results += nextState.result!!
                     }
                 }
-//                UseNullForError -> {
-//                    if (nextState.isErrored) {
-//                        results += null
-//                    } else {
-//                        results += nextState.result
-//                    }
-//                }
             }
         }
 
@@ -39,5 +32,4 @@ class sequence<Target, NewT>(vararg val parsers: Parser<Target, NewT>, val onErr
     sealed interface OnError
     object CompletelyError : OnError
     object IgnoreErrors    : OnError
-//    object UseNullForError : OnError
 }

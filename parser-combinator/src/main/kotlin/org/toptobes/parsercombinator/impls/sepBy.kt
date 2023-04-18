@@ -8,9 +8,9 @@ class sepBy<Target, NewT>(
     val separator: Parser<Target, *>,
     val allowTrailingSep: Boolean = true,
     val requireMatch: Boolean = false
-) : Parser<Target, List<NewT?>>() {
-    override fun parse(oldState: ParseState<Target, *>): ParseState<Target, out List<NewT?>> {
-        val results = mutableListOf<NewT?>()
+) : Parser<Target, List<NewT>>() {
+    override fun parse(oldState: ParseState<Target, *>): ParseState<Target, out List<NewT>> {
+        val results = mutableListOf<NewT>()
 
         var nextSeparatorState: ParseState<Target, *> = oldState
         lateinit var prevNextContentState: ParseState<Target, *>
@@ -33,7 +33,7 @@ class sepBy<Target, NewT>(
                 }
                 break
             } else {
-                results += nextContentState.result
+                results += nextContentState.result!!
             }
 
             nextSeparatorState = separator.parsePropagating(nextContentState)
@@ -56,9 +56,12 @@ class sepBy<Target, NewT>(
             sepBy(content, str(","), allowTrailingSep, requireMatch)
 
         fun <NewT> whitespaceInsensitiveCommas(content: Parser<String, NewT>, allowTrailingSep: Boolean = true, requireMatch: Boolean = false) =
-            sepBy(content, between(-whitespace, str(",")), allowTrailingSep, requireMatch)
+            sepBy(content, -str(","), allowTrailingSep, requireMatch)
 
         fun <NewT> whitespace(content: Parser<String, NewT>, allowTrailingSep: Boolean = true, requireMatch: Boolean = false) =
             sepBy(content, whitespace, allowTrailingSep, requireMatch)
+
+        fun <NewT> optionalWhitespace(content: Parser<String, NewT>, allowTrailingSep: Boolean = true, requireMatch: Boolean = false) =
+            sepBy(content, optionally(whitespace, ""), allowTrailingSep, requireMatch)
     }
 }

@@ -1,119 +1,132 @@
 #include "opcodes.h"
 #include "../cpu.h"
 
-OPCODE_IMPL(jne_imm) {
+OPCODE_IMPL(jne_mem) {
     word adr = cpu_read_word();
 
     if (cpu->flags.zf == 0) {
-        cpu->registers[ip] = adr;
+        cpu_reg16(ip) = adr;
     }
 }
 
-OPCODE_IMPL(jeq_imm) {
+OPCODE_IMPL(jeq_mem) {
     word adr = cpu_read_word();
 
     if (cpu->flags.zf == 1) {
-        cpu->registers[ip] = adr;
+        cpu_reg16(ip) = adr;
     }
 }
 
-OPCODE_IMPL(jgt_imm) {
+OPCODE_IMPL(jgt_mem) {
     word adr = cpu_read_word();
 
     if (cpu->flags.zf == 0 && cpu->flags.sf == 0) {
-        cpu->registers[ip] = adr;
+        cpu_reg16(ip) = adr;
     }
 }
 
-OPCODE_IMPL(jlt_imm) {
+OPCODE_IMPL(jlt_mem) {
     word adr = cpu_read_word();
 
     if (cpu->flags.zf == 0 && cpu->flags.sf == 1) {
-        cpu->registers[ip] = adr;
+        cpu_reg16(ip) = adr;
     }
 }
 
-OPCODE_IMPL(jge_imm) {
+OPCODE_IMPL(jge_mem) {
     word adr = cpu_read_word();
 
     if (cpu->flags.sf == 0) {
-        cpu->registers[ip] = adr;
+        cpu_reg16(ip) = adr;
     }
 }
 
-OPCODE_IMPL(jle_imm) {
+OPCODE_IMPL(jle_mem) {
     word adr = cpu_read_word();
 
     if (cpu->flags.zf ^ cpu->flags.sf) {
-        cpu->registers[ip] = adr;
+        cpu_reg16(ip) = adr;
     }
 }
 
-OPCODE_IMPL(jne_reg) {
+OPCODE_IMPL(jmp_mem) {
+    word adr = cpu_read_word();
+    cpu_reg16(ip) = adr;
+}
+
+OPCODE_IMPL(jne_ptr) {
     byte reg = cpu_read_byte();
     word adr = mmap_read_word(cpu->mmap, cpu_reg16(reg));
 
     if (cpu->flags.zf == 0) {
-        cpu->registers[ip] = adr;
+        cpu_reg16(ip) = adr;
     }
 }
 
-OPCODE_IMPL(jeq_reg) {
+OPCODE_IMPL(jeq_ptr) {
     byte reg = cpu_read_byte();
     word adr = mmap_read_word(cpu->mmap, cpu_reg16(reg));
 
     if (cpu->flags.zf == 1) {
-        cpu->registers[ip] = adr;
+        cpu_reg16(ip) = adr;
     }
 }
 
-OPCODE_IMPL(jgt_reg) {
+OPCODE_IMPL(jgt_ptr) {
     byte reg = cpu_read_byte();
     word adr = mmap_read_word(cpu->mmap, cpu_reg16(reg));
 
     if (cpu->flags.zf == 0 && cpu->flags.sf == 0) {
-        cpu->registers[ip] = adr;
+        cpu_reg16(ip) = adr;
     }
 }
 
-OPCODE_IMPL(jlt_reg) {
+OPCODE_IMPL(jlt_ptr) {
     byte reg = cpu_read_byte();
     word adr = mmap_read_word(cpu->mmap, cpu_reg16(reg));
 
     if (cpu->flags.zf == 0 && cpu->flags.sf == 1) {
-        cpu->registers[ip] = adr;
+        cpu_reg16(ip) = adr;
     }
 }
 
-OPCODE_IMPL(jge_reg) {
+OPCODE_IMPL(jge_ptr) {
     byte reg = cpu_read_byte();
     word adr = mmap_read_word(cpu->mmap, cpu_reg16(reg));
 
     if (cpu->flags.sf == 0) {
-        cpu->registers[ip] = adr;
+        cpu_reg16(ip) = adr;
     }
 }
 
-OPCODE_IMPL(jle_reg) {
+OPCODE_IMPL(jle_ptr) {
     byte reg = cpu_read_byte();
     word adr = mmap_read_word(cpu->mmap, cpu_reg16(reg));
 
     if (cpu->flags.zf ^ cpu->flags.sf) {
-        cpu->registers[ip] = adr;
+        cpu_reg16(ip) = adr;
     }
+}
+
+OPCODE_IMPL(jmp_ptr) {
+    byte reg = cpu_read_byte();
+    word adr = mmap_read_word(cpu->mmap, cpu_reg16(reg));
+    cpu_reg16(ip) = adr;
 }
 
 void init_jump_opcodes(struct cpu_t *cpu) {
-    cpu->opcodes[jne_imm] = jne_imm_impl;
-    cpu->opcodes[jeq_imm] = jeq_imm_impl;
-    cpu->opcodes[jgt_imm] = jgt_imm_impl;
-    cpu->opcodes[jlt_imm] = jlt_imm_impl;
-    cpu->opcodes[jge_imm] = jge_imm_impl;
-    cpu->opcodes[jle_imm] = jle_imm_impl;
-    cpu->opcodes[jne_reg] = jne_reg_impl;
-    cpu->opcodes[jeq_reg] = jeq_reg_impl;
-    cpu->opcodes[jgt_reg] = jgt_reg_impl;
-    cpu->opcodes[jlt_reg] = jlt_reg_impl;
-    cpu->opcodes[jge_reg] = jge_reg_impl;
-    cpu->opcodes[jle_reg] = jle_reg_impl;
+    ASSIGN_OPCODE(jne_mem, jne_mem_impl);
+    ASSIGN_OPCODE(jeq_mem, jeq_mem_impl);
+    ASSIGN_OPCODE(jgt_mem, jgt_mem_impl);
+    ASSIGN_OPCODE(jlt_mem, jlt_mem_impl);
+    ASSIGN_OPCODE(jge_mem, jge_mem_impl);
+    ASSIGN_OPCODE(jle_mem, jle_mem_impl);
+    ASSIGN_OPCODE(jmp_mem, jmp_mem_impl);
+    ASSIGN_OPCODE(jne_ptr, jne_ptr_impl);
+    ASSIGN_OPCODE(jeq_ptr, jeq_ptr_impl);
+    ASSIGN_OPCODE(jgt_ptr, jgt_ptr_impl);
+    ASSIGN_OPCODE(jlt_ptr, jlt_ptr_impl);
+    ASSIGN_OPCODE(jge_ptr, jge_ptr_impl);
+    ASSIGN_OPCODE(jle_ptr, jle_ptr_impl);
+    ASSIGN_OPCODE(jmp_ptr, jmp_ptr_impl);
 }

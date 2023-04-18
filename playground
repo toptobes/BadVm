@@ -1,0 +1,52 @@
+dw @str1 = "The max is " -- Unfortunately have to use dw FOR NOW until I add more instructions
+const byte $STR1_LEN = 11
+
+byte @str2={'H', 'i', ' ', 'm', 'o', 'm', '!',}
+dw   list = { 101b, 23, 0xf3, 'z', f3h, 0b1001 }
+
+const dw ARG_1 = 13
+const dw $ARG_2 = 4
+
+const word PRINT_CHR = 400
+
+_start:
+    -- Uses x86 calling convention
+    mov cx, $ARG_1
+    mov dx, $ARG_2
+    call poor_mans_multiply
+
+    -- ax should be loaded with '4'
+    mov cx, ax
+    mov dx, '7'
+    call max -- Should be dx (aka '7')
+
+    mov dx, @str1
+    xor cx, cx
+    LoopHead:
+        mov bx, [dx]
+        add dx, 2
+        mov &PRINT_CHR, bx
+
+        add cx, 1
+        cmp cx, $STR1_LEN
+        jne LoopHead
+
+    mov &PRINT_CHR, ax
+    stop
+
+poor_mans_multiply:
+    add ax, cx
+    sub dx, 1
+    cmp dx, 0
+    jne poor_mans_multiply
+    ret
+
+max:
+    cmp cx, dx
+    jgt GreaterThan
+    mov ax, dx
+    ret
+
+    GreaterThan:
+        mov ax, cx
+        ret

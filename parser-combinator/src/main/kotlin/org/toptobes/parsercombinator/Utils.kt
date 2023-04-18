@@ -2,11 +2,11 @@ package org.toptobes.parsercombinator
 
 import org.toptobes.parsercombinator.impls.*
 
-fun <Target, NewT> errored(state: ParseState<Target, *>, error: ErrorResult = state.error!!): ParseState<Target, NewT> {
+fun <T, R> errored(state: ParseState<T, *>, error: ErrorResult = state.error!!): ParseState<T, R> {
     return ParseState(null, state.target, state.index, error)
 }
 
-fun <Target, NewT> success(state: ParseState<Target, *>, result: NewT?, index: Int = state.index): ParseState<Target, NewT> {
+fun <T, R> success(state: ParseState<T, *>, result: R?, index: Int = state.index): ParseState<T, R> {
     return ParseState(result, state.target, index, null)
 }
 
@@ -16,23 +16,28 @@ val ParseState<*, *>.isErrored
 val ParseState<*, *>.isOkay
     get() = this.error == null
 
-operator fun <Target, NewT, MappedT> Parser<Target, NewT>.rangeTo(mapper: (NewT) -> MappedT) =
+operator fun <T, R, R2> Parser<T, R>.rangeTo(mapper: (R) -> R2) =
     this.map(mapper)
 
-infix fun <Target, NewT> Parser<Target, NewT>.then(other: Parser<Target, NewT>) =
+infix fun <T, R> Parser<T, R>.then(other: Parser<T, R>) =
     sequence(this, other)
 
-infix fun <Target, NewT> sequence<Target, NewT>.then(other: Parser<Target, NewT>) =
+infix fun <T, R> sequence<T, R>.then(other: Parser<T, R>) =
     this.chain { list -> other.map { list + it } }
 
-operator fun <Target, NewT> Parser<Target, NewT>.unaryPlus() =
+infix fun <T, R> Parser<T, R>.withDefault(default: R) =
+    optionally(this, default)
+
+operator fun <T, R> Parser<T, R>.unaryPlus() =
     repeatedly(this)
 
-operator fun <Target, NewT> Parser<Target, NewT>.not() =
-    optionally(this)
+operator fun <R> Parser<String, R>.unaryMinus() =
+    between(optionally(whitespace, ""), this)
 
-operator fun <NewT> Parser<String, NewT>.unaryMinus() =
-    between(!whitespace, this)
+operator fun Parser<String, String>.not() =
+    optionally(this, "")
 
-operator fun <Target,NewT> Parser<Target, NewT>.times(times: Int) =
+operator fun <T,R> Parser<T, R>.times(times: Int) =
     repeat(this, times)
+
+val optionalWhitespace = optionally(whitespace, "")

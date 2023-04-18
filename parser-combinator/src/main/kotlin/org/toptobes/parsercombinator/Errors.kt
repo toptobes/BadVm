@@ -1,6 +1,20 @@
 package org.toptobes.parsercombinator
 
-interface ErrorResult
+interface ErrorResult {
+    fun rootCause(pretty: Boolean = true): ErrorResult? {
+        return if (this is NestedError) cause.rootCause(pretty) else this
+    }
+
+    val prettyErrorMsg get() = toString()
+}
+
+interface NestedError : ErrorResult {
+    val cause: ErrorResult
+}
+
+data class BasicErrorResult(val desc: String) : ErrorResult {
+    override fun toString() = desc
+}
 
 interface DescriptiveErrorResult : ErrorResult {
     val parserName: String
@@ -11,8 +25,8 @@ data class EndOfInputError(
     override val parserName: String,
     override val targetIndex: Int,
 ) : DescriptiveErrorResult {
-    val errorMsg: String get() {
-        return "EndOfInputError(\"$parserName: Unexpected end of input @ target index $targetIndex\")"
+    override val prettyErrorMsg: String get() {
+        return "$parserName: Unexpected end of input @ target index $targetIndex"
     }
 }
 
@@ -21,8 +35,8 @@ data class MatchError(
     override val targetIndex: Int,
     val pattern: Any?
 ) : DescriptiveErrorResult {
-    val errorMsg: String get() {
-        return "MatchError(\"$parserName: Could not match '$pattern' @ target index $targetIndex\")"
+    override val prettyErrorMsg: String get() {
+        return "$parserName: Could not match '$pattern' @ target index $targetIndex"
     }
 }
 
@@ -32,8 +46,8 @@ data class UnexpectedMatchError(
     val expected: Any?,
     val got: Any?,
 ) : DescriptiveErrorResult {
-    val errorMsg: String get() {
-        return "MatchError(\"$parserName: expected $expected, got $got @ target index $targetIndex\")"
+    override val prettyErrorMsg: String get() {
+        return "$parserName: expected $expected, got $got @ target index $targetIndex"
     }
 }
 
@@ -41,10 +55,10 @@ data class SequenceError(
     override val parserName: String,
     override val targetIndex: Int,
     val parserIndex: Int,
-    val error: ErrorResult,
-) : DescriptiveErrorResult {
-    val errorMsg: String get() {
-        return "SequenceError(\"$parserName, parser #$parserIndex: $error\")"
+    override val cause: ErrorResult,
+) : DescriptiveErrorResult, NestedError {
+    override val prettyErrorMsg: String get() {
+        return "$parserName, parser #$parserIndex: $cause"
     }
 }
 
@@ -52,17 +66,35 @@ data class NoMatchError(
     override val parserName: String,
     override val targetIndex: Int,
 ) : DescriptiveErrorResult {
-    val errorMsg: String get() {
-        return "NoMatchError(\"$parserName: No matches @ target index $targetIndex\")"
+    override val prettyErrorMsg: String get() {
+        return "$parserName: No matches @ target index $targetIndex"
+    }
+}
+
+data class NoNonErrorsError(
+    override val parserName: String,
+    override val targetIndex: Int,
+    val errors: List<ErrorResult?>
+) : DescriptiveErrorResult {
+    override val prettyErrorMsg: String get() {
+        return "$parserName: No matches; errors = $errors"
+    }
+
+    override fun rootCause(pretty: Boolean): ErrorResult {
+        return ErrorListWrapper(pretty, errors.map { it?.rootCause() })
+    }
+
+    class ErrorListWrapper(val pretty: Boolean, val errors: List<ErrorResult?>) : ErrorResult {
+        override fun toString() = if (pretty) "${errors.map { "\"${it?.prettyErrorMsg}\"" }}" else "$errors"
     }
 }
 
 data class TrailingSepError(
     override val parserName: String,
     override val targetIndex: Int,
-    val seperator: String? = null,
+    val separator: String? = null,
 ) : DescriptiveErrorResult {
-    val errorMsg: String get() {
-        return "TrailingCommaError(\"$parserName: Disallowed trailing seperator ${seperator?.let { "($it)" } ?: ""} @ target index $targetIndex\")"
+    override val prettyErrorMsg: String get() {
+        return "$parserName: Disallowed trailing separator ${separator?.let { "($it)" } ?: ""} @ target index $targetIndex"
     }
 }
