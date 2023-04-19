@@ -1,3 +1,5 @@
+@file:Suppress("ClassName", "MemberVisibilityCanBePrivate")
+
 package org.toptobes.parsercombinator.impls
 
 import org.toptobes.parsercombinator.*

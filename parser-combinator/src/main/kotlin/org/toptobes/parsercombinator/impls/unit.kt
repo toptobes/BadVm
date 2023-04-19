@@ -1,10 +1,13 @@
+@file:Suppress("ClassName")
+
 package org.toptobes.parsercombinator.impls
 
 import org.toptobes.parsercombinator.ParseState
 import org.toptobes.parsercombinator.Parser
 
-class unit<Target, NewR> : Parser<Target, NewR>() {
-    override fun parse(oldState: ParseState<Target, *>): ParseState<Target, out NewR> {
-        return oldState as ParseState<Target, out NewR>
+class unit<T, R> : Parser<T, R>() {
+    @Suppress("UNCHECKED_CAST")
+    override fun parse(oldState: ParseState<T, *>): ParseState<T, out R> {
+        return oldState as ParseState<T, out R>
     }
 }

@@ -1,9 +1,13 @@
+@file:Suppress("ClassName")
+
 package org.toptobes.parsercombinator.impls
 
 import org.toptobes.parsercombinator.*
 
-class any<Target, NewT>(vararg val parsers: Parser<Target, NewT>) : Parser<Target, NewT>() {
-    override fun parse(oldState: ParseState<Target, *>): ParseState<Target, out NewT> {
+class any<T, R>(
+    vararg val parsers: Parser<T, R>
+) : Parser<T, R>() {
+    override fun parse(oldState: ParseState<T, *>): ParseState<T, out R> {
         val errors = mutableListOf<ErrorResult?>()
 
         for (parser in parsers) {

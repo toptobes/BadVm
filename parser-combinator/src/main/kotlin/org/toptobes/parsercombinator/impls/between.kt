@@ -1,14 +1,16 @@
+@file:Suppress("ClassName", "MemberVisibilityCanBePrivate")
+
 package org.toptobes.parsercombinator.impls
 
 import org.toptobes.parsercombinator.*
 
 // sigh
-class between<Target, NewT>(
-    val left: Parser<Target, *>,
-    val content: Parser<Target, NewT>,
-    val right: Parser<Target, *> = left,
-) : Parser<Target, NewT>() {
-    override fun parse(oldState: ParseState<Target, *>): ParseState<Target, out NewT> {
+class between<T, R>(
+    val left:    Parser<T, *>,
+    val content: Parser<T, R>,
+    val right:   Parser<T, *> = left,
+) : Parser<T, R>() {
+    override fun parse(oldState: ParseState<T, *>): ParseState<T, out R> {
         val leftState = left.parsePropagating(oldState)
         if (leftState.isErrored) {
             return errored(leftState, SequenceError("between", leftState.index, 0, leftState.error!!))

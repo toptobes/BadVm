@@ -1,22 +1,24 @@
+@file:Suppress("ClassName", "MemberVisibilityCanBePrivate")
+
 package org.toptobes.parsercombinator.impls
 
 import org.toptobes.parsercombinator.*
 
 // sigh
-class sepBy<Target, NewT>(
-    val content: Parser<Target, NewT>,
-    val separator: Parser<Target, *>,
+class sepBy<T, R>(
+    val content: Parser<T, R>,
+    val separator: Parser<T, *>,
     val allowTrailingSep: Boolean = true,
     val requireMatch: Boolean = false
-) : Parser<Target, List<NewT>>() {
-    override fun parse(oldState: ParseState<Target, *>): ParseState<Target, out List<NewT>> {
-        val results = mutableListOf<NewT>()
+) : Parser<T, List<R>>() {
+    override fun parse(oldState: ParseState<T, *>): ParseState<T, out List<R>> {
+        val results = mutableListOf<R>()
 
-        var nextSeparatorState: ParseState<Target, *> = oldState
-        lateinit var prevNextContentState: ParseState<Target, *>
-        lateinit var nextContentState: ParseState<Target, *>
+        var nextSeparatorState: ParseState<T, *> = oldState
+        lateinit var prevNextContentState: ParseState<T, *>
+        lateinit var nextContentState: ParseState<T, *>
 
-        lateinit var lastOkayState: ParseState<Target, *>
+        lateinit var lastOkayState: ParseState<T, *>
 
         while (true) {
             if (nextSeparatorState != oldState) {

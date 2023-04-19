@@ -1,11 +1,16 @@
+@file:Suppress("ClassName", "MemberVisibilityCanBePrivate")
+
 package org.toptobes.parsercombinator.impls
 
 import org.toptobes.parsercombinator.*
 
-class sequence<Target, NewT>(vararg val parsers: Parser<Target, NewT>, val onError: OnError = CompletelyError) : Parser<Target, List<NewT>>() {
-    override fun parse(oldState: ParseState<Target, *>): ParseState<Target, out List<NewT>> {
-        val results = mutableListOf<NewT>()
-        var nextState: ParseState<Target, *> = oldState
+class sequence<T, R>(
+    vararg val parsers: Parser<T, R>,
+    val onError: OnError = CompletelyError
+) : Parser<T, List<R>>() {
+    override fun parse(oldState: ParseState<T, *>): ParseState<T, out List<R>> {
+        val results = mutableListOf<R>()
+        var nextState: ParseState<T, *> = oldState
 
         for ((index, parser) in parsers.withIndex()) {
             nextState = parser.parsePropagating(nextState)

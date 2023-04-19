@@ -21,3 +21,13 @@ val reg8 = any(*reg8Codes.keys.map { str(it) }.toTypedArray())
 
 val ptr = between.squareBrackets(reg16)
     .map { Pointer(it.regName) }
+
+val operandParserMap = mapOf(
+    "REG16" to reg16,
+    "REG8"  to reg8,
+    "IMM16" to imm16,
+    "IMM8"  to imm8,
+    "MEM"   to mem,
+    "PTR"   to ptr,
+)
+

@@ -1,11 +1,16 @@
+@file:Suppress("ClassName", "MemberVisibilityCanBePrivate")
+
 package org.toptobes.parsercombinator.impls
 
 import org.toptobes.parsercombinator.*
 
-class repeatedly<Target, NewT>(val parser: Parser<Target, NewT>, val requireMatch: Boolean = false) : Parser<Target, List<NewT>>() {
-    override fun parse(oldState: ParseState<Target, *>): ParseState<Target, out List<NewT>> {
-        val results = mutableListOf<NewT>()
-        var nextState: ParseState<Target, *> = oldState
+class repeatedly<T, R>(
+    val parser: Parser<T, R>,
+    val requireMatch: Boolean = false
+) : Parser<T, List<R>>() {
+    override fun parse(oldState: ParseState<T, *>): ParseState<T, out List<R>> {
+        val results = mutableListOf<R>()
+        var nextState: ParseState<T, *> = oldState
 
         while (true) {
             val testState = parser.parsePropagating(nextState)
@@ -13,6 +18,7 @@ class repeatedly<Target, NewT>(val parser: Parser<Target, NewT>, val requireMatc
             if (testState.isErrored) {
                 break
             }
+
             nextState = testState
             results += nextState.result!!
         }

@@ -1,8 +1,7 @@
-dw @str1 = "The max is " -- Unfortunately have to use dw FOR NOW until I add more instructions
+dw @str1 = "The max is " # Unfortunately have to use dw FOR NOW until I add more instructions
 const byte $STR1_LEN = 11
 
-byte @str2={'H', 'i', ' ', 'm', 'o', 'm', '!',}
-dw   list = { 101b, 23, 0xf3, 'z', f3h, 0b1001 }
+byte @str2={'H', 'i', ' ', 'm', 'o', 'm',}
 
 const dw ARG_1 = 13
 const dw $ARG_2 = 4
@@ -10,15 +9,16 @@ const dw $ARG_2 = 4
 const word PRINT_CHR = 400
 
 _start:
-    -- Uses x86 calling convention
+    # Uses x86 calling convention
     mov cx, $ARG_1
+    #= I like cars1!1! =#
     mov dx, $ARG_2
     call poor_mans_multiply
 
-    -- ax should be loaded with '4'
+    # ax should be loaded with '4'
     mov cx, ax
     mov dx, '7'
-    call max -- Should be dx (aka '7')
+    call max # Should be dx (aka '7')
 
     mov dx, @str1
     xor cx, cx
@@ -34,9 +34,11 @@ _start:
     mov &PRINT_CHR, ax
     stop
 
+dw   list = { 101b, 23, 0xf3, 'z', f3h, 0b1001 }
+
 poor_mans_multiply:
     add ax, cx
-    sub dx, 1
+    dec dx
     cmp dx, 0
     jne poor_mans_multiply
     ret

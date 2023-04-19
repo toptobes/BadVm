@@ -137,3 +137,7 @@ data class Const16Definition(override val identifier: String, val word: Short) :
 data class Var8Definition(override val identifier: String, val bytes: List<Byte>) : Definition
 
 data class Var16Definition(override val identifier: String, val words: List<Short>) : Definition
+
+// -- OTHER --
+
+object Comment : Node

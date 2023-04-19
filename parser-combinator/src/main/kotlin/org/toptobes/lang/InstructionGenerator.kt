@@ -7,7 +7,7 @@ import java.io.File
 
 data class InstructionMetadata(val mnemonic: String, val tag: String, val opcode: Byte, val size: Int, val parser: Parser<String, Instruction>)
 
-val argSizes = mapOf(
+private val argSizes = mapOf(
     "REG16" to 1,
     "REG8"  to 1,
     "IMM8"  to 1,
@@ -16,19 +16,14 @@ val argSizes = mapOf(
     "PTR"   to 1,
 )
 
-val rawInstructions = File("../opcodes")
+val instructions = File("../opcodes")
     .readText()
-
-val instructions = rawInstructions
     .split(",")
     .asSequence()
     .filter(String::isNotBlank)
     .map { it.trim() }
-    .fold(listOf<InstructionMetadata>()) { acc, str ->
-        val nameAndOpcode = str.split("\\s?=\\s?".toRegex())
-
-        val name = nameAndOpcode.first()
-        val code = (nameAndOpcode.getOrNull(1)?.toInt() ?: (acc.last().opcode + 1)).toByte()
+    .fold(listOf<InstructionMetadata>()) { instructions, name ->
+        val code = instructions.size.toByte()
 
         val nameAndArgs = name.split("_")
 
@@ -40,7 +35,7 @@ val instructions = rawInstructions
 
         val size = 1 + args.fold(0) { size, arg -> size + argSizes[arg.uppercase()]!! }
 
-        acc + InstructionMetadata(mnemonic, tag, code, size, parser)
+        instructions + InstructionMetadata(mnemonic, tag, code, size, parser)
     }
     .groupBy { it.mnemonic.lowercase() }
 
@@ -51,7 +46,7 @@ val instructionParsers = instructions
 
 fun getInstructionMetadata(node: Node): InstructionMetadata? {
     if (node !is Instruction) {
-        throw IllegalArgumentException("${node.javaClass.simpleName} isn't an Instruction")
+        throw IllegalArgumentException("${node.javaClass.simpleName} isn't an Instruction ∴ doesn't have metadata")
     }
 
     val mnemonic = node.mnemonic.uppercase()

@@ -9,7 +9,7 @@ typedef struct {
     mem_map_t *mmap;
 } vm_t;
 
-void vm_init(vm_t *vm, int mem_size);
+void vm_init(vm_t *vm, word mem_size);
 
 int vm_run(vm_t *vm);
 

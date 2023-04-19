@@ -1,55 +1,53 @@
 package org.toptobes.lang
 
-import kotlin.experimental.and
-
 fun encodeIr(ir: List<Node>): List<Byte> {
     val identifiers = mutableMapOf<String, Short>()
     val bytecode = mutableListOf<Byte>(0, 0)
 
-    ir.fold(2) { acc, value -> encodePass1(bytecode, identifiers, acc, value) }
+    ir.forEach { node -> encodePass1(bytecode, identifiers, node) }
 
-    val (high, low) = bytecode.size.toShort().toBytes()
+    ir.fold(bytecode.size) { acc, value -> encodePass2(identifiers, acc, value) }
+
+    val (high, low) = identifiers["_start"]?.toBytes() ?: throwNoStartProc()
     bytecode[0] = high
     bytecode[1] = low
 
     ir.filterIsInstance<Instruction>()
-      .forEach { encodePass2(bytecode, identifiers, it) }
+      .forEach { encodePass3(bytecode, identifiers, it) }
     return bytecode
 }
 
-private fun encodePass1(bytecode: MutableList<Byte>, identifiers: MutableMap<String, Short>, currentSize: Int, node: Node) = when (node) {
-    is LabelDefinition -> {
-        identifiers[node.identifier] = currentSize.toShort()
-        currentSize
-    }
+private fun encodePass1(bytecode: MutableList<Byte>, identifiers: MutableMap<String, Short>, node: Node) = when (node) {
     is Var8Definition -> {
-        identifiers[node.identifier] = currentSize.toShort()
+        identifiers[node.identifier] = bytecode.size.toShort()
         bytecode += node.bytes
-        currentSize + node.bytes.size
     }
     is Var16Definition -> {
-        identifiers[node.identifier] = currentSize.toShort()
+        identifiers[node.identifier] = bytecode.size.toShort()
         bytecode += node.words.flatMap(Short::toBytes)
-        currentSize + (node.words.size * 2)
     }
-    is Const8Definition -> {
-        identifiers[node.identifier] = node.byte.toShort()
-        currentSize
-    }
-    is Const16Definition -> {
-        identifiers[node.identifier] = node.word
-        currentSize
-    }
-    !is Instruction -> {
-        throw IllegalArgumentException("Non instruction $node")
-    }
-    else -> {
-        val metadata = getInstructionMetadata(node)!!
-        currentSize + metadata.size
-    }
+    else -> Unit
 }
 
-private fun encodePass2(bytecode: MutableList<Byte>, identifiers: MutableMap<String, Short>, node: Instruction) {
+private fun encodePass2(identifiers: MutableMap<String, Short>, currentSize: Int, node: Node) = if (node is Definition) {
+    when (node) {
+        is LabelDefinition -> {
+            identifiers[node.identifier] = currentSize.toShort()
+        }
+        is Const8Definition -> {
+            identifiers[node.identifier] = node.byte.toShort()
+        }
+        is Const16Definition -> {
+            identifiers[node.identifier] = node.word
+        }
+    }
+    currentSize
+} else {
+    val metadata = getInstructionMetadata(node)!!
+    currentSize + metadata.size
+}
+
+private fun encodePass3(bytecode: MutableList<Byte>, identifiers: MutableMap<String, Short>, node: Instruction) {
     val metadata = getInstructionMetadata(node)
     metadata?.let { bytecode += it.opcode }
 
@@ -81,12 +79,16 @@ private fun encodePass2(bytecode: MutableList<Byte>, identifiers: MutableMap<Str
     }}
 }
 
+private fun throwNoStartProc(): Nothing {
+    throw IllegalStateException("No _start prodecure found")
+}
+
 private fun throwIdentifiableUsedBeforeDefinition(identifiable: Identifiable): Nothing {
     throw IllegalStateException("${identifiable.identifier} (${identifiable.javaClass.simpleName}) used before definition")
 }
 
 private fun Short.toBytes(): List<Byte> {
-    val high = ((this and 0xff00.toShort()).toInt() shr 8).toByte()
-    val low  = (this and 0x00ff).toByte()
+    val high = (this.toInt() shr 8).toByte()
+    val low  = this.toByte()
     return listOf(high, low)
 }

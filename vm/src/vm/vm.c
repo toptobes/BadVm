@@ -2,8 +2,8 @@
 
 static mem_map_t *mem_init(mem_t *mem);
 
-void vm_init(vm_t *vm, int mem_size) {
-    mem_t *mem = mem_new(1024);
+void vm_init(vm_t *vm, word mem_size) {
+    mem_t *mem = mem_new(mem_size);
     mem_map_t *mmap = mem_init(mem);
 
     vm->cpu = cpu_new(mmap);

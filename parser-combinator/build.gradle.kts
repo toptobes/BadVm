@@ -17,4 +17,3 @@ tasks.withType(KotlinCompile::class).all {
         freeCompilerArgs = listOf("-Xjvm-default=all")
     }
 }
-
