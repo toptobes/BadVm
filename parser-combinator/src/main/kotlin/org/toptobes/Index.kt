@@ -3,11 +3,19 @@ package org.toptobes
 import org.toptobes.lang.compile
 import org.toptobes.lang.utils.ifLeft
 import org.toptobes.lang.utils.ifRight
-import java.io.File
 
 fun main() {
-    val instructions = File("../playground")
-        .readText()
+    val instructions = """
+        type Recursive = {
+            Recursive r;
+        }
+        
+        _start:
+            mov ax, bx
+    """.trimIndent()
+
+//    val instructions = File("../playground")
+//        .readText()
 
     val maybeBytecode = compile(instructions)
 
@@ -18,6 +26,6 @@ fun main() {
     maybeBytecode.ifRight { bytecode ->
         val bytecodeStr = bytecode.joinToString(", ")
         println("{ $bytecodeStr }")
-        File("../out").writeText(bytecodeStr)
+//        File("../out").writeText(bytecodeStr)
     }
 }

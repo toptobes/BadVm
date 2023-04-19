@@ -11,6 +11,8 @@ data class Instruction(
 
 // -- OTHER SUB-INTERFACES --
 
+interface NodeToDelete : Node
+
 interface Definition : Node {
     val identifier: String
 }
@@ -130,14 +132,39 @@ data class Label(override val identifier: String) : MemAddress, Identifiable16  
 
 data class LabelDefinition(override val identifier: String) : Definition
 
-data class Const8Definition(override val identifier: String, val byte: Byte) : Definition
-
+data class Const8Definition (override val identifier: String, val byte: Byte ) : Definition
 data class Const16Definition(override val identifier: String, val word: Short) : Definition
 
-data class Var8Definition(override val identifier: String, val bytes: List<Byte>) : Definition
-
+data class Var8Definition (override val identifier: String, val bytes: List<Byte> ) : Definition
 data class Var16Definition(override val identifier: String, val words: List<Short>) : Definition
+
+data class VarCustomDefinition(
+    override val identifier: String,
+    val bytes: List<Byte>,
+    val type: Type,
+) : Definition
+
+// -- STRUCTS --
+
+interface Type : Definition
+
+data class TypeThunk(override val identifier: String) : Type {
+    override fun equals(other: Any?) = identifier == other
+    override fun hashCode() = identifier.hashCode()
+}
+
+data class TypeImpl (override val identifier: String, val fields: List<TypeField>) : Type {
+    override fun equals(other: Any?) = identifier.equals(other)
+    override fun hashCode() = identifier.hashCode()
+}
+
+sealed interface TypeField : Definition
+data class TypeField8 (override val identifier: String) : TypeField
+data class TypeField16(override val identifier: String) : TypeField
+data class TypeFieldCustom(override val identifier: String, val type: Type) : TypeField
+
+object TypeDefinition : NodeToDelete
 
 // -- OTHER --
 
-object Comment : Node
+object Comment : NodeToDelete

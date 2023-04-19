@@ -1,11 +1,14 @@
+@file:Suppress("ClassName", "PrivatePropertyName")
+
 package org.toptobes.lang.parsers
 
 import org.toptobes.lang.Instruction
 import org.toptobes.lang.Operand
 import org.toptobes.lang.instructionParsers
-import org.toptobes.lang.utils.NEWLINE
 import org.toptobes.parsercombinator.*
 import org.toptobes.parsercombinator.impls.str
+
+private val NEWLINE = System.getProperty("line.separator")!!
 
 class instructionParser : Parser<String, Instruction>() {
     override fun parse(oldState: ParseState<String, *>): ParseState<String, out Instruction> {

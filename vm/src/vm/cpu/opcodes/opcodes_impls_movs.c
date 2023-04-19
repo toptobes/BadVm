@@ -31,6 +31,13 @@ OPCODE_IMPL(mov_ptr_reg16) {
     cpu_reg16(dst) = mmap_read_word(cpu->mmap, cpu_reg16(src));
 }
 
+OPCODE_IMPL(mov_imm16_ptr_reg16) {
+    byte dst = cpu_read_byte();
+    byte src = cpu_read_byte();
+    word offset = cpu_read_word();
+    cpu_reg16(dst) = mmap_read_word(cpu->mmap, cpu_reg16(src) + offset);
+}
+
 OPCODE_IMPL(mov_reg8_reg8) {
     byte dst = cpu_read_byte();
     byte src = cpu_read_byte();
@@ -58,6 +65,7 @@ OPCODE_IMPL(mov_reg8_mem) {
 void init_mov_opcodes(struct cpu_t *cpu) {
     ASSIGN_OPCODE(mov_reg16_reg16, mov_reg16_reg16_impl);
     ASSIGN_OPCODE(mov_imm16_reg16, mov_imm16_reg16_impl);
+    ASSIGN_OPCODE(mov_imm16_ptr_reg16, mov_imm16_ptr_reg16_impl);
     ASSIGN_OPCODE(mov_mem_reg16, mov_mem_reg16_impl);
     ASSIGN_OPCODE(mov_reg16_mem, mov_reg16_mem_impl);
     ASSIGN_OPCODE(mov_ptr_reg16, mov_ptr_reg16_impl);
