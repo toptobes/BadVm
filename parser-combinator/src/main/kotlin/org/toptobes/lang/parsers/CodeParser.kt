@@ -23,6 +23,6 @@ fun parseCode(instructions: String): Either<ErrorResult, List<Node>> {
     return if (nodesState.isErrored) {
         Either.Left(nodesState.error!!)
     } else {
-        Either.Right(nodesState.result!!.filter { node -> node !== DeleteThisNode })
+        Either.Right(nodesState.result!!.filter { node -> node !== NodeToDelete })
     }
 }

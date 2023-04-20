@@ -215,4 +215,4 @@ data class TypeFieldType(override val identifier: String, val type: TypeInstance
 
 // -- OTHER --
 
-object DeleteThisNode : Node
+object NodeToDelete : Node

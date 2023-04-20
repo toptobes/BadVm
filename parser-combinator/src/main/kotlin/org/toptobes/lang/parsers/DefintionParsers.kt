@@ -8,9 +8,7 @@ import org.toptobes.parsercombinator.impls.*
 
 fun definitionParser(types: MutableMap<String, Type>) = any(
     labelDefinition,
-    variableWordDef,
-    variableByteDef,
-    variableTypeDef(types),
+    variableDefinition(types),
     constWordDef,
     constByteDef,
     type(types),
@@ -19,7 +17,7 @@ fun definitionParser(types: MutableMap<String, Type>) = any(
 // -- UTIL --
 
 private val byteType = any(str("db"), str("byte"))
-private val wordType = any(str("dw"), str("word"))
+val wordType = any(str("dw"), str("word"))
 
 private fun <R> cStyleArrayOf(parser: Parser<String, R>): between<String, List<R>> {
     return between.curlyBrackets(sepBy.whitespaceInsensitiveCommas(parser))
@@ -28,59 +26,15 @@ private fun <R> cStyleArrayOf(parser: Parser<String, R>): between<String, List<R
 private val string = between.doubleQuotes(until(char) { it.result == '"' })
     .map { it.map(Char::code) }
 
-private val equals = str("=")
+val equals = str("=")
 
-private val singleByteList = byte.map { listOf(it) }
-private val multiByteList  = cStyleArrayOf(byte)
-private val byteString = string..{ str -> str.map(Int::toByte) }
+val singleByteList = byte.map { listOf(it) }
+val multiByteList  = cStyleArrayOf(byte)
+val byteString = string..{ str -> str.map(Int::toByte) }
 
-private val singleWordList = word.map { listOf(it) }
-private val multiWordList  = cStyleArrayOf(word)
-private val wordString = string..{ str -> str.map(Int::toShort) }
-
-// -- VARIABLE DEFINITIONS --
-
-val variableByteDef = contextual { ctx ->
-    (ctx parse -byteType)                                                      ?: fail("Not a @byte declaration")
-
-    val name = (ctx parse sequence(
-        optionalWhitespace, !str("@"), identifier,
-    )..{ it[2] })                                                              ?: crash("Error with @byte name")
-
-    ctx.ifParseable(-equals) {
-        val bytes = (ctx parse any(singleByteList, multiByteList, byteString)) ?: crash("Error with @byte definition")
-        success(Var8Definition(name, bytes))
-    }
-
-    ctx.ifParseable(-word) { numBytes ->
-        val zero = 0.toByte()
-        val bytes = List(numBytes.toInt()) { zero }
-        success(Var8Definition(name, bytes))
-    }
-
-    crash("Variable byte definition doesn't have -equals nor size")
-}
-
-val variableWordDef = contextual { ctx ->
-    (ctx parse -wordType)                                                      ?: fail("Not a @word declaration")
-
-    val name = (ctx parse sequence(
-        optionalWhitespace, !str("@"), identifier,
-    )..{ it[2] })                                                              ?: crash("Error with @word name")
-
-    ctx.ifParseable(-equals) {
-        val words = (ctx parse any(singleWordList, multiWordList, wordString)) ?: crash("Error with @word definition")
-        success(Var16Definition(name, words))
-    }
-
-    ctx.ifParseable(-word) { numWords ->
-        val zero = 0.toShort()
-        val words = List(numWords.toInt()) { zero }
-        success(Var16Definition(name, words))
-    }
-
-    crash("Variable word definition doesn't have -equals nor size")
-}
+val singleWordList = word.map { listOf(it) }
+val multiWordList  = cStyleArrayOf(word)
+val wordString = string..{ str -> str.map(Int::toShort) }
 
 // -- CONST DEFINITIONS --
 
@@ -203,7 +157,7 @@ fun definedType(types: MutableMap<String, Type>) = contextual { ctx ->
     }
 
     types += name to DefinedType(name, fields)
-    success(DeleteThisNode)
+    success(NodeToDelete)
 }
 
 fun declaredType(types: MutableMap<String, Type>) = contextual { ctx ->
@@ -213,19 +167,19 @@ fun declaredType(types: MutableMap<String, Type>) = contextual { ctx ->
     val name = ctx parse identifier                          or ccrash("Error with struct name definition")
     types += name to DeclaredType(name)
 
-    success(DeleteThisNode)
+    success(NodeToDelete)
 }
 
 fun type(types: MutableMap<String, Type>) = any(definedType(types), declaredType(types))
 
 // -- CUSTOM TYPE VAR --
 
-fun nextUnnamedTypeConstructorField(fields: MutableList<DeclaredTypeField>) = contextual<String, DeclaredTypeField> { ctx ->
+private fun nextUnnamedTypeConstructorField(fields: MutableList<DeclaredTypeField>) = contextual<String, DeclaredTypeField> { ctx ->
     val nextField = fields.removeFirst()
     success(nextField)
 }
 
-fun nextNamedTypeConstructorField(type: DefinedType, fields: MutableList<DeclaredTypeField>) = contextual { ctx ->
+private fun nextNamedTypeConstructorField(type: DefinedType, fields: MutableList<DeclaredTypeField>) = contextual { ctx ->
     val fieldNameParser = -any(*fields.map { str(it.fieldName) }.toTypedArray())
     val fieldName = ctx parse fieldNameParser or ccrash("Type constructor for '${type.identifier}' missing field(s)")
     val fieldTypeIdx = fields.indexOfFirst { it.fieldName == fieldName }
@@ -237,7 +191,7 @@ fun nextNamedTypeConstructorField(type: DefinedType, fields: MutableList<Declare
     success(fieldType)
 }
 
-fun parseConstructorArgs(type: DefinedType, types: MutableMap<String, Type>) = contextual { ctx ->
+private fun parseConstructorArgs(type: DefinedType, types: MutableMap<String, Type>) = contextual { ctx ->
     val values = mutableListOf<TypeField>()
     val fields = type.declaredFields.toMutableList()
 
@@ -303,22 +257,4 @@ fun typeConstructor(typeName: String, types: MutableMap<String, Type>): Parser<S
     ctx parse -str('}')                                                 or ccrash("'$typeName' constructor missing close }")
 
     success(values)
-}
-
-fun variableTypeDef(types: MutableMap<String, Type>) = contextual { ctx ->
-    val typeName = (ctx parse -identifier)
-    val type = types[typeName]                                          or cfail("Not a custom var declaration")
-
-    val name = ctx parse sequence(
-        optionalWhitespace, !str("@"), identifier,
-    )..{ it[2] }                                                        or ccrash("Error with custom var declaration")
-
-    ctx parse -equals                                                   or ccrash("No = for custom var declaration")
-
-    ctx.ifParseable(-str("?")) {
-        success(ZeroedTypeInstance(name, type))
-    }
-
-    val fields = ctx parse typeConstructor(type.identifier, types)      or ccrash("Error parsing $name's fields")
-    success(DefinedTypeInstance(name, type, fields))
 }

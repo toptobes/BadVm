@@ -14,7 +14,7 @@ private val hexadecimal = any(
 private val binary = any(
     regex("0b([10]+)", 1),
     regex("([10]+)b" , 1),
-)..{ it.toInt(9) }
+)..{ it.toInt(2) }
 
 private val charCode = between.singleQuotes(char)
     .map { it.code }
