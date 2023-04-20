@@ -8,7 +8,7 @@ fun encodeIr(ir: List<Node>): List<Byte> {
 
     ir.fold(bytecode.size) { acc, value -> encodePass2(identifiers, acc, value) }
 
-    val (high, low) = identifiers["_start"]?.toBytes() ?: throwNoStartProc()
+    val (high, low) = (identifiers["_start"] ?: bytecode.size.toShort()).toBytes()
     bytecode[0] = high
     bytecode[1] = low
 
@@ -25,6 +25,10 @@ private fun encodePass1(bytecode: MutableList<Byte>, identifiers: MutableMap<Str
     is Var16Definition -> {
         identifiers[node.identifier] = bytecode.size.toShort()
         bytecode += node.words.flatMap(Short::toBytes)
+    }
+    is TypeInstance -> {
+        identifiers[node.identifier] = bytecode.size.toShort()
+        bytecode += node.toBytes()
     }
     else -> Unit
 }
@@ -55,9 +59,9 @@ private fun encodePass3(bytecode: MutableList<Byte>, identifiers: MutableMap<Str
         val identifier = it.identifier.trimStart('$', '@', '&')
         val value = identifiers[identifier] ?: throwIdentifiableUsedBeforeDefinition(it)
 
-        if (it is Identifiable16) {
+        if (it is IdentifiableWord) {
             it.actualValue = value
-        } else if (it is Identifiable8) {
+        } else if (it is IdentifiableByte) {
             it.actualValue = value.toByte()
         }
     }
@@ -66,10 +70,10 @@ private fun encodePass3(bytecode: MutableList<Byte>, identifiers: MutableMap<Str
         is Register -> {
             bytecode += it.code
         }
-        is Immediate16 -> {
+        is ImmediateWord -> {
             bytecode += it.value.toBytes()
         }
-        is Immediate8 -> {
+        is ImmediateByte -> {
             bytecode += it.value
         }
         is MemAddress -> {
@@ -79,15 +83,11 @@ private fun encodePass3(bytecode: MutableList<Byte>, identifiers: MutableMap<Str
     }}
 }
 
-private fun throwNoStartProc(): Nothing {
-    throw IllegalStateException("No _start prodecure found")
-}
-
 private fun throwIdentifiableUsedBeforeDefinition(identifiable: Identifiable): Nothing {
     throw IllegalStateException("${identifiable.identifier} (${identifiable.javaClass.simpleName}) used before definition")
 }
 
-private fun Short.toBytes(): List<Byte> {
+fun Short.toBytes(): List<Byte> {
     val high = (this.toInt() shr 8).toByte()
     val low  = this.toByte()
     return listOf(high, low)

@@ -80,28 +80,3 @@ abstract class Parser<T, out R> {
         }
     }
 }
-
-class Context<T>(initialState: ParseState<T, *>) {
-    var state: ParseState<T, *> = initialState
-
-    infix fun <R> parse(parser: Parser<T, R>): R? {
-        val nextState = parser.parsePropagating(state)
-        state = nextState
-        return nextState.result
-    }
-
-    infix fun <R> tryParse(parser: Parser<T, R>): R? {
-        val nextState = parser.parsePropagating(state)
-        return nextState.result
-    }
-
-    inline fun <R, R2> ifParseable(parser: Parser<T, R>, block: (R) -> R2): R2? {
-        val nextState = parser.parsePropagating(state)
-
-        if (nextState.isOkay) {
-            state = nextState
-        }
-
-        return nextState.result?.let(block)
-    }
-}

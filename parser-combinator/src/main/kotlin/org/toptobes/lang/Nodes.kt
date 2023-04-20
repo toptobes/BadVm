@@ -1,5 +1,7 @@
 package org.toptobes.lang
 
+import org.toptobes.lang.utils.Word
+
 interface Node
 
 // -- INSTRUCTIONS --
@@ -10,8 +12,6 @@ data class Instruction(
 ) : Node
 
 // -- OTHER SUB-INTERFACES --
-
-interface NodeToDelete : Node
 
 interface Definition : Node {
     val identifier: String
@@ -26,52 +26,50 @@ interface Identifiable {
     val identifier: String
 }
 
-interface Identifiable16 : Identifiable {
+interface IdentifiableWord : Identifiable {
     var actualValue: Short
 }
 
-interface Identifiable8  : Identifiable {
+interface IdentifiableByte : Identifiable {
     var actualValue: Byte
 }
 
 // -- IMMEDIATES --
 
-interface Immediate16 : Operand {
+interface ImmediateWord : Operand {
+    override val operandAssociation get() = "IMM16"
     val value: Short
 }
 
-interface Immediate8 : Operand {
+interface ImmediateByte : Operand {
+    override val operandAssociation get() = "IMM8"
     val value: Byte
 }
 
-data class Imm16(override val value: Short): Immediate16 {
+data class Imm16(override val value: Short) : ImmediateWord {
     override val operandAssociation = "IMM16"
     override val name = "IMM16"
 }
 
-data class Imm8(override val value: Byte): Immediate8 {
-    override val operandAssociation = "IMM8"
+data class Imm8(override val value: Byte) : ImmediateByte {
     override val name = "IMM8"
 }
 
-data class Const16(override val identifier: String): Immediate16, Identifiable16 {
+data class Const16(override val identifier: String) : ImmediateWord, IdentifiableWord {
     override var actualValue: Short = -1
     override val value get() = actualValue
-    override val operandAssociation = "IMM16"
     override val name = "CONST16"
 }
 
-data class Const8(override val identifier: String): Immediate8, Identifiable8 {
+data class Const8(override val identifier: String) : ImmediateByte, IdentifiableByte {
     override var actualValue: Byte = -1
     override val value get() = actualValue
-    override val operandAssociation = "IMM8"
     override val name = "CONST8"
 }
 
-data class Var(override val identifier: String) : Immediate16, Identifiable16 {
+data class Var(override val identifier: String) : ImmediateWord, IdentifiableWord {
     override var actualValue: Short = -1
     override val value get() = actualValue
-    override val operandAssociation = "IMM16"
     override val name = "VAR"
 }
 
@@ -106,25 +104,23 @@ private fun throwInvalidRegister(regName: String): Nothing {
 // -- MEMORY --
 
 interface MemAddress : Operand {
+    override val operandAssociation get() = "MEM"
     val address: Short
 }
 
-data class ImmMem(val address: Short) : Operand {
-    override val operandAssociation = "MEM"
+data class ImmMem(override val address: Short) : MemAddress, Operand {
     override val name = "IMM_MEM"
 }
 
-data class ConstAsAddress(override val identifier: String): MemAddress, Identifiable16 {
+data class ConstAsAddress(override val identifier: String) : MemAddress, IdentifiableWord {
     override var actualValue: Short = -1
     override val address get() = actualValue
-    override val operandAssociation = "MEM"
     override val name = "CONST16"
 }
 
-data class Label(override val identifier: String) : MemAddress, Identifiable16  {
+data class Label(override val identifier: String) : MemAddress, IdentifiableWord {
     override var actualValue: Short = -1
     override val address get() = actualValue
-    override val operandAssociation = "MEM"
     override val name = "LABEL"
 }
 
@@ -132,39 +128,91 @@ data class Label(override val identifier: String) : MemAddress, Identifiable16  
 
 data class LabelDefinition(override val identifier: String) : Definition
 
-data class Const8Definition (override val identifier: String, val byte: Byte ) : Definition
+data class Const8Definition(override val identifier: String, val byte: Byte) : Definition
 data class Const16Definition(override val identifier: String, val word: Short) : Definition
 
-data class Var8Definition (override val identifier: String, val bytes: List<Byte> ) : Definition
+data class Var8Definition(override val identifier: String, val bytes: List<Byte>) : Definition
 data class Var16Definition(override val identifier: String, val words: List<Short>) : Definition
-
-data class VarCustomDefinition(
-    override val identifier: String,
-    val bytes: List<Byte>,
-    val type: Type,
-) : Definition
 
 // -- STRUCTS --
 
-interface Type : Definition
+interface Type : Definition {
+    val size: Int
+}
 
-data class TypeThunk(override val identifier: String) : Type {
+data class DeclaredType(override val identifier: String) : Type {
     override fun equals(other: Any?) = identifier == other
     override fun hashCode() = identifier.hashCode()
+    override val size = -1
 }
 
-data class TypeImpl (override val identifier: String, val fields: List<TypeField>) : Type {
-    override fun equals(other: Any?) = identifier.equals(other)
+data class DefinedType(override val identifier: String, val declaredFields: List<DeclaredTypeField>) : Type {
+    override fun equals(other: Any?) = identifier == other
     override fun hashCode() = identifier.hashCode()
+    override val size = declaredFields.fold(0) { acc, field -> acc + field.size }
 }
 
-sealed interface TypeField : Definition
-data class TypeField8 (override val identifier: String) : TypeField
-data class TypeField16(override val identifier: String) : TypeField
-data class TypeFieldCustom(override val identifier: String, val type: Type) : TypeField
+sealed interface DeclaredTypeField : Node {
+    val fieldName: String
+    val size: Int
+}
 
-object TypeDefinition : NodeToDelete
+data class DeclaredTypeFieldWord(override val fieldName: String) : DeclaredTypeField {
+    override val size = 2
+}
+
+data class DeclaredTypeFieldByte(override val fieldName: String) : DeclaredTypeField {
+    override val size = 1
+}
+
+data class DeclaredTypeFieldType(override val fieldName: String, val type: Type) : DeclaredTypeField {
+    override val size = type.size
+}
+
+interface TypeInstance : Definition {
+    fun toBytes(): List<Byte>
+    val type: Type
+    val size: Int
+}
+
+data class DefinedTypeInstance(override val identifier: String, override val type: Type, val fields: List<TypeField>) : TypeInstance {
+    override val size = fields.fold(0) { acc, field -> acc + field.size }
+
+    override fun toBytes() = fields.fold(listOf<Byte>()) { acc, field ->
+        acc + when (field) {
+            is TypeFieldByte -> listOf(field.value)
+            is TypeFieldWord -> field.value.toBytes()
+            is TypeFieldType -> field.type.toBytes()
+        }
+    }
+}
+
+data class ZeroedTypeInstance(override val identifier: String, override val type: Type) : TypeInstance {
+    override val size = type.size
+
+    override fun toBytes(): List<Byte> {
+        return List(type.size) { 0 }
+    }
+}
+
+sealed interface TypeField : Identifiable {
+    val size: Int
+}
+
+data class TypeFieldWord(override val identifier: String, override val value: Word) : TypeField, ImmediateWord {
+    override val name = "TYPE_FIELD_WORD"
+    override val size = 2
+}
+
+data class TypeFieldByte(override val identifier: String, override val value: Byte) : TypeField, ImmediateByte {
+    override val name = "TYPE_FIELD_BYTE"
+    override val size = 1
+}
+
+data class TypeFieldType(override val identifier: String, val type: TypeInstance) : TypeField {
+    override val size = type.size
+}
 
 // -- OTHER --
 
-object Comment : NodeToDelete
+object DeleteThisNode : Node

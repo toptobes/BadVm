@@ -43,8 +43,8 @@ val pureImm8  = byte..(::Imm8)
 // -- VARIABLES --
 
 val identifier = sequence(
-    regex("[_a-zA-Z]").basicErrorMap { "Invalid start of identifier" },
-    optionally(regex("\\w+"), "").basicErrorMap { "Identifier contains invalid chars" }
+    regex("[_a-zA-Z]"),
+    optionally(regex("\\w+"), ""),
 ).map { it[0] + it[1] }
 
 val const8 = strOf("$", identifier)
@@ -53,15 +53,15 @@ val const8 = strOf("$", identifier)
 val const16 = strOf("$", identifier)
     .map(::Const16)
 
-val constAsAddress = strOf("&", identifier)
-    .map(::ConstAsAddress)
-
 val variable = strOf("@", identifier)
     .map(::Var)
 
 // -- MEMORY --
 
-val memAddress = pureImm16..{ ImmMem(it.value) }
+val memAddress = between.squareBrackets(pureImm16..{ ImmMem(it.value) })
 
 val label = identifier
     .map(::Label)
+
+val constAsAddress = strOf("&", identifier)
+    .map(::ConstAsAddress)

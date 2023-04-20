@@ -32,7 +32,7 @@ fun createInstructionParser(name: String, vararg args: String) = contextual { ct
         val parsed = (ctx parse parser) ?: fail("Error with arg #$idx ($arg) for $name: ${ctx.state.error?.rootCause()}")
 
         if (idx != args.size - 1) {
-            (ctx parse -str(',')) ?: crash("No expected comma")
+            (ctx parse -str(',')) ?: fail("No expected comma")
         }
 
         acc + parsed

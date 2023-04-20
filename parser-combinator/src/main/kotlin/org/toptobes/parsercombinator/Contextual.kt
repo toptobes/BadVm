@@ -1,5 +1,33 @@
 package org.toptobes.parsercombinator
 
+class Context<T>(initialState: ParseState<T, *>) {
+    var state: ParseState<T, *> = initialState
+
+    infix fun <R> parse(parser: Parser<T, R>): R? {
+        val nextState = parser.parsePropagating(state)
+        state = nextState
+        return nextState.result
+    }
+
+    infix fun <R> tryParse(parser: Parser<T, R>): R? {
+        val nextState = parser.parsePropagating(state)
+        return nextState.result
+    }
+
+    infix fun <R> canParse(parser: Parser<T, R>): Boolean {
+        return tryParse(parser) != null
+    }
+
+    inline fun <R, R2> ifParseable(parser: Parser<T, R>, block: (R) -> R2): R2? {
+        val nextState = parser.parsePropagating(state)
+
+        if (nextState.isOkay) {
+            state = nextState
+        }
+        return nextState.result?.let(block)
+    }
+}
+
 // I know this is terrible practice but whatever this is for myself so who cares
 private class ContextualParseSuccess(val result: Any?) : Exception()
 private class ContextualParseError(val errorInf: Any?) : Exception()
@@ -19,6 +47,18 @@ class ContextScope<E, R> {
 
     fun success(data: R): Nothing {
         throw ContextualParseSuccess(data)
+    }
+
+    fun cfail(err: String): () -> Nothing {
+        return { fail(err) }
+    }
+
+    fun ccrash(err: String): () -> Nothing {
+        return { crash(err) }
+    }
+
+    inline infix fun <T> T?.or(nothing: () -> Nothing): T {
+        return this ?: nothing()
     }
 }
 

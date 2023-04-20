@@ -5,7 +5,14 @@ import org.toptobes.parsercombinator.*
 import org.toptobes.parsercombinator.impls.any
 import java.io.File
 
-data class InstructionMetadata(val mnemonic: String, val tag: String, val opcode: Byte, val size: Int, val parser: Parser<String, Instruction>)
+data class InstructionMetadata(
+    val mnemonic: String,
+    val tag: String,
+    val opcode: Byte,
+    val size: Int,
+    val numArgs: Int,
+    val parser: Parser<String, Instruction>,
+)
 
 private val argSizes = mapOf(
     "REG16" to 1,
@@ -35,9 +42,10 @@ val instructions = File("../opcodes")
 
         val size = 1 + args.fold(0) { size, arg -> size + argSizes[arg.uppercase()]!! }
 
-        instructions + InstructionMetadata(mnemonic, tag, code, size, parser)
+        instructions + InstructionMetadata(mnemonic, tag, code, size, args.size, parser)
     }
     .groupBy { it.mnemonic.lowercase() }
+    .mapValues { (_, variations) -> variations.sortedByDescending { it.numArgs } }
 
 val instructionParsers = instructions
     .mapValues { (_, list) ->
