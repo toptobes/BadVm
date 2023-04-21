@@ -168,6 +168,9 @@ private fun parseConstructorArgs(type: DefinedType, vars: VarDefs) = contextual 
             }
             is TypeDefinitionFieldType -> {
                 if (testVariableNext is TypeInstance) {
+                    if (!testVariableNext.isConstant) {
+                        crash("Trying to assign non-const ${testVariableNext.identifier} to field")
+                    }
                     testVariableNext
                 } else {
                     val constructor = typeConstructor(nextFieldType.typeFn().identifier, vars)
