@@ -9,6 +9,7 @@ mov_reg16_mem,
 mov_reg8_reg8,
 mov_imm8_reg8,
 mov_mem_reg8,
+mov_ptr_reg8,
 mov_reg8_mem,
 
 add_reg16_reg16,

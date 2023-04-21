@@ -1,18 +1,18 @@
 dw @str1 = "The max is " # Unfortunately have to use dw FOR NOW until I add more instructions
-const byte $STR1_LEN = 11
+const byte STR1_LEN = 11
 
 byte @str2={'H', 'i', ' ', 'm', 'o', 'm',}
 
 const dw ARG_1 = 13
-const dw $ARG_2 = 4
+const dw ARG_2 = 4
 
 const word PRINT_CHR = 400
 
 _start:
     # Uses x86 calling convention
-    mov cx, $ARG_1
+    mov cx, @ARG_1
     #= I like cars1!1! =#
-    mov dx, $ARG_2
+    mov dx, @ARG_2
     call poor_mans_multiply
 
     # ax should be loaded with '4'
@@ -28,7 +28,7 @@ _start:
         mov &PRINT_CHR, bx
 
         add cx, 1
-        cmp cx, $STR1_LEN
+        cmp cx, @STR1_LEN
         jne LoopHead
 
     mov &PRINT_CHR, ax

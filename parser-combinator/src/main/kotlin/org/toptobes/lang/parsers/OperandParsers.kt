@@ -1,33 +1,37 @@
 package org.toptobes.lang.parsers
 
-import org.toptobes.lang.*
+import org.toptobes.lang.nodes.Pointer
+import org.toptobes.lang.nodes.Reg16
+import org.toptobes.lang.nodes.Reg8
+import org.toptobes.lang.mappings.reg16Codes
+import org.toptobes.lang.mappings.reg8Codes
+import org.toptobes.lang.utils.VarDefs
 import org.toptobes.parsercombinator.impls.any
 import org.toptobes.parsercombinator.impls.between
 import org.toptobes.parsercombinator.impls.str
 
-val imm16 = any(pureImm16, const16)
-val imm8  = any(pureImm8 , const8)
+fun imm16(vars: VarDefs) = any(pureImm16, wordVariable(vars), nullptr)
+fun imm8 (vars: VarDefs) = any(pureImm8,  byteVariable(vars))
 
-val mem = any(
-    memAddress, variable,
+fun mem(vars: VarDefs) = any(
+    memAddress(vars), wordVariable(vars),
     constAsAddress, label
 )
 
-val reg16 = any(*reg16Codes.keys.map { str(it) }.toTypedArray())
+fun reg16(ignored: VarDefs) = any(*reg16Codes.keys.map { str(it) }.toTypedArray())
     .map(::Reg16)
 
-val reg8 = any(*reg8Codes.keys.map { str(it) }.toTypedArray())
+fun reg8(ignored: VarDefs) = any(*reg8Codes.keys.map { str(it) }.toTypedArray())
     .map(::Reg8)
 
-val ptr = between.squareBrackets(reg16)
+fun ptr(vars: VarDefs) = between.squareBrackets(reg16(vars))
     .map { Pointer(it.regName) }
 
 val operandParserMap = mapOf(
-    "REG16" to reg16,
-    "REG8"  to reg8,
-    "IMM16" to imm16,
-    "IMM8"  to imm8,
-    "MEM"   to mem,
-    "PTR"   to ptr,
+    "REG16" to ::reg16,
+    "REG8"  to ::reg8,
+    "IMM16" to ::imm16,
+    "IMM8"  to ::imm8,
+    "MEM"   to ::mem,
+    "PTR"   to ::ptr,
 )
-

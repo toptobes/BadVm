@@ -1,8 +1,15 @@
-package org.toptobes.lang
+@file:Suppress("LocalVariableName")
 
-import org.toptobes.lang.parsers.createInstructionParser
+package org.toptobes.lang.mappings
+
+import org.toptobes.lang.nodes.Instruction
+import org.toptobes.lang.nodes.Node
+import org.toptobes.lang.nodes.Operand
+import org.toptobes.lang.parsers.operandParserMap
+import org.toptobes.lang.utils.VarDefs
 import org.toptobes.parsercombinator.*
 import org.toptobes.parsercombinator.impls.any
+import org.toptobes.parsercombinator.impls.str
 import java.io.File
 
 data class InstructionMetadata(
@@ -11,7 +18,7 @@ data class InstructionMetadata(
     val opcode: Byte,
     val size: Int,
     val numArgs: Int,
-    val parser: Parser<String, Instruction>,
+    val parser: (VarDefs) -> contextual<Instruction>,
 )
 
 private val argSizes = mapOf(
@@ -49,8 +56,29 @@ val instructions = File("../opcodes")
 
 val instructionParsers = instructions
     .mapValues { (_, list) ->
-        any(*list.map { it.parser }.toTypedArray())
+        { vars: VarDefs -> any(*list.map { it.parser(vars) }.toTypedArray()) }
     }
+
+fun createInstructionParser(name: String, vararg args: String) = { vars: VarDefs ->
+    contextual { ctx ->
+        (ctx parse -str(name)) ?: crash("Not an instruction")
+
+        val parsedArgs = args.foldIndexed(emptyList<Operand>()) { idx, acc, arg ->
+            val _parser = operandParserMap[arg.uppercase()] ?: crash("No parser found for arg #$idx '$arg' for $name")
+            val parser = _parser(vars)
+
+            val parsed = (ctx parse parser) ?: fail("Error with arg #${idx + 1} ($arg) for $name: ${ctx.state.error?.rootCause()}")
+
+            if (idx != args.size - 1) {
+                (ctx parse -str(',')) ?: fail("No expected comma")
+            }
+
+            acc + parsed
+        }
+
+        success(Instruction(name, parsedArgs))
+    }
+}
 
 fun getInstructionMetadata(node: Node): InstructionMetadata? {
     if (node !is Instruction) {

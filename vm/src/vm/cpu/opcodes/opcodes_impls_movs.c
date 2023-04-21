@@ -56,6 +56,12 @@ OPCODE_IMPL(mov_mem_reg8) {
     cpu_reg8(reg) = mmap_read_byte(cpu->mmap, adr);
 }
 
+OPCODE_IMPL(mov_ptr_reg8) {
+    byte dst = cpu_read_byte();
+    byte src = cpu_read_byte();
+    cpu_reg8(dst) = mmap_read_byte(cpu->mmap, cpu_reg16(src));
+}
+
 OPCODE_IMPL(mov_reg8_mem) {
     word adr = cpu_read_word();
     byte reg = cpu_read_byte();
@@ -72,5 +78,6 @@ void init_mov_opcodes(struct cpu_t *cpu) {
     ASSIGN_OPCODE(mov_reg8_reg8, mov_reg8_reg8_impl);
     ASSIGN_OPCODE(mov_imm8_reg8, mov_imm8_reg8_impl);
     ASSIGN_OPCODE(mov_mem_reg8, mov_mem_reg8_impl);
+    ASSIGN_OPCODE(mov_ptr_reg8, mov_ptr_reg8_impl);
     ASSIGN_OPCODE(mov_reg8_mem, mov_reg8_mem_impl);
 }

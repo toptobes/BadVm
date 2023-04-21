@@ -55,10 +55,10 @@ class sepBy<T, R>(
 
     companion object {
         fun <NewT> commas(content: Parser<String, NewT>, allowTrailingSep: Boolean = true, requireMatch: Boolean = false) =
-            sepBy(content, str(","), allowTrailingSep, requireMatch)
-
-        fun <NewT> whitespaceInsensitiveCommas(content: Parser<String, NewT>, allowTrailingSep: Boolean = true, requireMatch: Boolean = false) =
             sepBy(content, -str(","), allowTrailingSep, requireMatch)
+
+        fun <NewT> periods(content: Parser<String, NewT>, allowTrailingSep: Boolean = true, requireMatch: Boolean = false) =
+            sepBy(content, -str("."), allowTrailingSep, requireMatch)
 
         fun <NewT> whitespace(content: Parser<String, NewT>, allowTrailingSep: Boolean = true, requireMatch: Boolean = false) =
             sepBy(content, whitespace, allowTrailingSep, requireMatch)

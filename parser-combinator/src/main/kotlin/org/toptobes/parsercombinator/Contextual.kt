@@ -1,5 +1,8 @@
 package org.toptobes.parsercombinator
 
+import org.toptobes.lang.utils.StatefulParsingException
+import org.toptobes.lang.utils.StatelessParsingException
+
 class Context<T>(initialState: ParseState<T, *>) {
     var state: ParseState<T, *> = initialState
 
@@ -9,22 +12,26 @@ class Context<T>(initialState: ParseState<T, *>) {
         return nextState.result
     }
 
-    infix fun <R> tryParse(parser: Parser<T, R>): R? {
+    infix fun <R> peek(parser: Parser<T, R>): R? {
         val nextState = parser.parsePropagating(state)
         return nextState.result
     }
 
     infix fun <R> canParse(parser: Parser<T, R>): Boolean {
-        return tryParse(parser) != null
+        return peek(parser) != null
     }
 
-    inline fun <R, R2> ifParseable(parser: Parser<T, R>, block: (R) -> R2): R2? {
+    infix fun <R> tryParse(parser: Parser<T, R>): R? {
         val nextState = parser.parsePropagating(state)
 
         if (nextState.isOkay) {
             state = nextState
         }
-        return nextState.result?.let(block)
+        return nextState.result
+    }
+
+    inline fun <R, R2> tryParse(parser: Parser<T, R>, block: (R) -> R2): R2? {
+        return tryParse(parser)?.let(block)
     }
 }
 
@@ -32,7 +39,7 @@ class Context<T>(initialState: ParseState<T, *>) {
 private class ContextualParseSuccess(val result: Any?) : Exception()
 private class ContextualParseError(val errorInf: Any?) : Exception()
 
-class ContextScope<E, R> {
+class ContextScope<E, R>(private val ctx: Context<String>) {
     fun fail(err: String): Nothing = fail(object : ErrorResult {
         override fun toString() = err
     })
@@ -41,8 +48,8 @@ class ContextScope<E, R> {
         throw ContextualParseError(err)
     }
 
-    fun crash(err: String): Nothing {
-        throw IllegalStateException(err)
+    fun crash(msg: String): Nothing {
+        throw StatefulParsingException(msg, ctx.state)
     }
 
     fun success(data: R): Nothing {
@@ -62,16 +69,18 @@ class ContextScope<E, R> {
     }
 }
 
-class contextual<T, R>(val fn: ContextScope<ErrorResult, R>.(Context<T>) -> Nothing) : Parser<T, R>() {
-    override fun parse(oldState: ParseState<T, *>): ParseState<T, out R> {
+class contextual<R>(val fn: ContextScope<ErrorResult, R>.(Context<String>) -> Nothing) : Parser<String, R>() {
+    override fun parse(oldState: ParseState<String, *>): ParseState<String, out R> {
         val context = Context(oldState)
 
         try {
-            ContextScope<ErrorResult, R>().fn(context)
+            ContextScope<ErrorResult, R>(context).fn(context)
         } catch (e: ContextualParseSuccess) {
             return success(context.state, e.result as R)
         } catch (e: ContextualParseError) {
             return errored(context.state, e.errorInf as ErrorResult)
+        } catch (e: StatelessParsingException) {
+            throw StatefulParsingException(e.message!!, context.state)
         }
     }
 }

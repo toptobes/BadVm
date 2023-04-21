@@ -1,7 +1,7 @@
 #ifndef VM_DEBUG_H
 #define VM_DEBUG_H
 
-//#define CPU_DEBUG_DUMP_ALL
+#define CPU_DEBUG_DUMP_ALL
 //#define CPU_DEBUG_TIME_LOOPS
 //#define CPU_DEBUG_STEP_MANUALLY
 

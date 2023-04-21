@@ -1,16 +1,28 @@
 package org.toptobes.lang
 
-import org.toptobes.lang.parsers.parseCode
 import org.toptobes.parsercombinator.ErrorResult
 import org.toptobes.lang.utils.Either
+import org.toptobes.lang.utils.StatefulParsingException
+import org.toptobes.lang.utils.StatelessParsingException
 import org.toptobes.lang.utils.ifRight
 
-fun compile(code: String): Either<ErrorResult, List<Byte>> {
-    val parsed = parseCode(code)
+fun compile(code: String): Either<String, List<Byte>> {
+    try {
+        val parsed = parseCode(code)
 
-    val bytecode = parsed.ifRight { ir ->
-        encodeIr(ir)
-    } ?: return (parsed as Either.Left)
+        val maybeError = (parsed as? Either.Left<ErrorResult>)
+            ?.value
+            ?.rootCause()
+            ?.prettyErrorMsg
 
-    return Either.Right(bytecode)
+        val bytecode = parsed.ifRight { ir ->
+            encodeIr(ir)
+        } ?: return Either.Left(maybeError!!)
+
+        return Either.Right(bytecode)
+    } catch (e: StatelessParsingException) {
+        return Either.Left(e.message!!)
+    } catch (e: StatefulParsingException) {
+        return Either.Left(e.message!!)
+    }
 }
