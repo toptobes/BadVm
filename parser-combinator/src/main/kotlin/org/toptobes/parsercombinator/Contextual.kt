@@ -17,7 +17,7 @@ class Context<T>(initialState: ParseState<T, *>) {
         return nextState.result
     }
 
-    infix fun <R> canParse(parser: Parser<T, R>): Boolean {
+    infix fun <R> canPeek(parser: Parser<T, R>): Boolean {
         return peek(parser) != null
     }
 
@@ -32,6 +32,10 @@ class Context<T>(initialState: ParseState<T, *>) {
 
     inline fun <R, R2> tryParse(parser: Parser<T, R>, block: (R) -> R2): R2? {
         return tryParse(parser)?.let(block)
+    }
+
+    infix fun <R> canTryParse(parser: Parser<T, R>): Boolean {
+        return tryParse(parser) != null
     }
 }
 

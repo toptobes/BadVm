@@ -10,7 +10,6 @@ data class TypeInstance(override val identifier: String, val type: DefinedType, 
 
     fun toBytes(): List<Byte> = fields.fold(listOf()) { acc, field ->
         acc + when (field) {
-            is AddressDefinition -> field.address.toBytes()
             is ByteVarDefinition -> listOf(field.byte)
             is WordVarDefinition -> field.word.toBytes()
             is TypeInstance      -> field.toBytes()

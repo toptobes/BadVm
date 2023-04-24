@@ -49,7 +49,7 @@ private fun byteVariableDefinition(name: String) = contextual { ctx ->
     ctx.tryParse(-word) { numBytes ->
         val zero = 0.toByte()
         val bytes = List(numBytes.toInt()) { zero }
-        success(MultiByteVarDefinition(name, bytes))
+        success(ByteArrayVarDefinition(name, bytes))
     }
 
     crash("@byte definition doesn't have equals nor size")
@@ -64,7 +64,7 @@ private fun wordVariableDefinition(name: String) = contextual { ctx ->
     ctx.tryParse(-word) { numWords ->
         val zero = 0.toShort()
         val words = List(numWords.toInt()) { zero }
-        success(MultiWordVarDefinition(name, words))
+        success(WordArrayVarDefinition(name, words))
     }
 
     crash("@word definition doesn't have equals nor size")
@@ -91,14 +91,14 @@ private fun typeVariableDefinition(name: String, typeName: String, vars: VarDefs
 
 private fun bytes(name: String) = any(
     byte.map { ByteVarDefinition(name, it) },
-    cStyleArrayOf(byte).map { MultiByteVarDefinition(name, it) },
-    string()..{ str -> str.map(Int::toByte) }..{ MultiByteVarDefinition(name, it) },
+    cStyleArrayOf(byte).map { ByteArrayVarDefinition(name, it) },
+    string()..{ str -> str.map(Int::toByte) }..{ ByteArrayVarDefinition(name, it) },
 )
 
 private fun words(name: String) = any(
     word.map { WordVarDefinition(name, it) },
-    cStyleArrayOf(word).map { MultiWordVarDefinition(name, it) },
-    string()..{ str -> str.map(Int::toShort) }..{ MultiWordVarDefinition(name, it) },
+    cStyleArrayOf(word).map { WordArrayVarDefinition(name, it) },
+    string()..{ str -> str.map(Int::toShort) }..{ WordArrayVarDefinition(name, it) },
 )
 
 private fun <R> cStyleArrayOf(parser: Parser<String, R>): between<String, List<R>> {
@@ -133,7 +133,7 @@ private fun parseConstructorArgs(type: DefinedType, vars: VarDefs) = contextual 
     val fields = type.declaredFields.toMutableList()
 
     val isNamedCheck = -!identifier then -str(":")
-    val isNamedConstructor = ctx canParse isNamedCheck
+    val isNamedConstructor = ctx canPeek isNamedCheck
 
     while (fields.isNotEmpty()) {
         val nextFieldType = if (isNamedConstructor) {
@@ -145,7 +145,6 @@ private fun parseConstructorArgs(type: DefinedType, vars: VarDefs) = contextual 
         val nextFieldName = nextFieldType.fieldName
 
         val testVariableNext = ctx tryParse variable(vars)
-        val testAddressNext = ctx tryParse constAsAddress
 
         values += when (nextFieldType) {
             is TypeDefinitionFieldByte -> {
@@ -159,8 +158,6 @@ private fun parseConstructorArgs(type: DefinedType, vars: VarDefs) = contextual 
             is TypeDefinitionFieldWord -> {
                 if (testVariableNext is WordVarDefinition) {
                     testVariableNext
-                } else if (testAddressNext != null) {
-                    testAddressNext
                 } else {
                     val word = (ctx parse imm16(vars) or ccrash("Word field '$nextFieldName' not being assigned word in ${type.identifier} constructor")).value
                     WordVarDefinition(nextFieldName, word)

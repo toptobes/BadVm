@@ -91,13 +91,13 @@ fun byteVariable(vars: VarDefs) = variable(vars)
 
 // -- MEMORY --
 
-fun memAddress(vars: VarDefs) = between.squareBrackets(imm16(vars)..{ ImmMemAddress(it.value) })
+fun memAddress(vars: VarDefs) = between.squareBrackets(imm16(vars)..{ ImmAddr(it.value) })
 
 val label = identifier
     .map(::Label)
 
 val constAsAddress = strOf("&", identifier)
-    .map(::AddressDefinition)
+    .map(::AddrVariable)
 
 val nullptr = -str("?")
     .map { Imm16(0) }

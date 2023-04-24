@@ -10,19 +10,16 @@ interface Register : Operand {
 data class Reg16(val regName: String) : Register {
     override val code: Byte = reg16Codes[regName] ?: throwInvalidRegister(regName)
     override val operandAssociation = "REG16"
-    override val name = "REG16"
 }
 
 data class Reg8(val regName: String) : Register {
     override val code: Byte = reg8Codes[regName] ?: throwInvalidRegister(regName)
     override val operandAssociation = "REG8"
-    override val name = "REG8"
 }
 
 data class Pointer(val regName: String) : Register {
     override val code: Byte = reg16Codes[regName] ?: throwInvalidRegister(regName)
     override val operandAssociation = "PTR"
-    override val name = "PTR"
 }
 
 private fun throwInvalidRegister(regName: String): Nothing {
