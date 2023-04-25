@@ -5,22 +5,32 @@ import kotlin.properties.Delegates
 
 // -- INTERFACES --
 
-interface VariableUsage : Identifiable
+sealed interface VariableUsage : Identifiable
+
+sealed interface DehydratedVarUsage : VariableUsage
+sealed interface HydratedVarUsage   : VariableUsage
 
 // -- IMPLS --
 
-data class WordVariable(override val identifier: String) : VariableUsage, WordOperand {
-    override var value by Delegates.notNull<Word>()
-}
+data class WordVariable(
+    override val identifier: String,
+    override val value: Word
+) : HydratedVarUsage, WordOperand
 
-data class ByteVariable(override val identifier: String) : VariableUsage, ByteOperand {
-    override var value by Delegates.notNull<Byte>()
-}
+data class ByteVariable(
+    override val identifier: String,
+    override val value: Byte
+) : HydratedVarUsage, ByteOperand
 
-data class AddrVariable(override val identifier: String) : VariableUsage, AddrOperand {
+data class AddrVariable(override val identifier: String) : DehydratedVarUsage, AddrOperand {
     override var address by Delegates.notNull<Word>()
 }
 
-data class Label(override val identifier: String) : VariableUsage, AddrOperand {
+data class Label(override val identifier: String) : DehydratedVarUsage, AddrOperand {
     override var address by Delegates.notNull<Word>()
 }
+
+data class EmbeddedBytesVariable(
+    override val identifier: String,
+    val value: List<Byte>
+) : HydratedVarUsage
