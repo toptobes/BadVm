@@ -1,11 +1,12 @@
 package org.toptobes.lang.nodes
 
 import org.toptobes.lang.utils.Word
+import org.toptobes.toBytes
 
-sealed interface VariableType
-object Allocated : VariableType
-object Embedded  : VariableType
-object Immediate : VariableType
+sealed interface AllocationType
+object Allocated : AllocationType
+object Embedded  : AllocationType
+object Immediate : AllocationType
 
 sealed class Definition : Node, Identifiable {
     abstract val size: Int
@@ -15,29 +16,35 @@ sealed class Definition : Node, Identifiable {
 sealed class TypeDefinition : Definition()
 
 sealed class VariableDefinition : Definition() {
-    var varType: VariableType = Allocated
+    var allocType: AllocationType = Allocated
 }
 
-sealed class StaticDefinition : VariableDefinition()
+sealed class StaticDefinition : VariableDefinition() {
+    val parent: StaticDefinition? = null
+    abstract fun toBytes(): List<Byte>
+}
+
 sealed class VectorDefinition : VariableDefinition()
 
 data class LabelDefinition(override val identifier: String) : VariableDefinition() {
-    init { varType = Embedded; isExport = false }
+    init { allocType = Embedded; isExport = false }
     override val size = 2
 }
 
-data class ByteVarDefinition(override val identifier: String, val byte: Byte) : StaticDefinition() {
+data class ByteInstance(override val identifier: String, val byte: Byte) : StaticDefinition() {
+    override fun toBytes() = listOf(byte)
     override val size = 1
 }
 
-data class WordVarDefinition(override val identifier: String, val word: Word) : StaticDefinition() {
+data class WordInstance(override val identifier: String, val word: Word) : StaticDefinition() {
+    override fun toBytes() = word.toBytes()
     override val size = 2
 }
 
-data class ByteArrayVarDefinition(override val identifier: String, val bytes: List<Byte>) : VectorDefinition() {
+data class ByteArrayInstance(override val identifier: String, val bytes: List<Byte>) : VectorDefinition() {
     override val size = bytes.size
 }
 
-data class WordArrayVarDefinition(override val identifier: String, val words: List<Word>) : VectorDefinition() {
+data class WordArrayInstance(override val identifier: String, val words: List<Word>) : VectorDefinition() {
     override val size = words.size
 }

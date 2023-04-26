@@ -16,7 +16,12 @@ interface ByteOperand : Operand {
     val value: Byte
 }
 
-interface AddrOperand : Operand {
-    override val operandAssociation get() = "MEM"
+interface WordAddrOperand : Operand {
+    override val operandAssociation get() = "MEM16"
+    val address: Word
+}
+
+interface ByteAddrOperand : Operand {
+    override val operandAssociation get() = "MEM8"
     val address: Word
 }

@@ -41,9 +41,9 @@ class Context<T>(initialState: ParseState<T, *>) {
 
 // I know this is terrible practice but whatever this is for myself so who cares
 private class ContextualParseSuccess(val result: Any?) : Exception()
-private class ContextualParseError(val errorInf: Any?) : Exception()
+private class ContextualParseError(val errorInf: ErrorResult) : Exception()
 
-class ContextScope<E, R>(private val ctx: Context<String>) {
+class ContextScope<R>(private val ctx: Context<String>) {
     fun fail(err: String): Nothing = fail(object : ErrorResult {
         override fun toString() = err
     })
@@ -73,16 +73,16 @@ class ContextScope<E, R>(private val ctx: Context<String>) {
     }
 }
 
-class contextual<R>(val fn: ContextScope<ErrorResult, R>.(Context<String>) -> Nothing) : Parser<String, R>() {
+class contextual<R>(val fn: ContextScope<R>.(Context<String>) -> Nothing) : Parser<String, R>() {
     override fun parse(oldState: ParseState<String, *>): ParseState<String, out R> {
         val context = Context(oldState)
 
         try {
-            ContextScope<ErrorResult, R>(context).fn(context)
+            ContextScope<R>(context).fn(context)
         } catch (e: ContextualParseSuccess) {
             return success(context.state, e.result as R)
         } catch (e: ContextualParseError) {
-            return errored(context.state, e.errorInf as ErrorResult)
+            return errored(context.state, e.errorInf)
         } catch (e: StatelessParsingException) {
             throw StatefulParsingException(e.message!!, context.state)
         }

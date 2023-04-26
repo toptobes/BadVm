@@ -15,7 +15,7 @@ fun imm8 (vars: VarDefs) = any(pureImm8,  byteVariable(vars))
 
 fun mem(vars: VarDefs) = any(
     memAddress(vars), wordVariable(vars),
-    constAsAddress, label
+    label
 )
 
 fun reg16(ignored: VarDefs) = any(*reg16Codes.keys.map { str(it) }.toTypedArray())
@@ -32,6 +32,7 @@ val operandParserMap = mapOf(
     "REG8"  to ::reg8,
     "IMM16" to ::imm16,
     "IMM8"  to ::imm8,
-    "MEM"   to ::mem,
+    "MEM16" to ::mem,
+//  "MEM8"  to ::mem,
     "PTR"   to ::ptr,
 )

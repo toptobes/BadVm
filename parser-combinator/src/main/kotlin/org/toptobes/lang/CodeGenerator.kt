@@ -88,9 +88,3 @@ fun encodeIr(ir: List<Node>): List<Byte> {
 //private fun throwIdentifiableUsedBeforeDefinition(identifiable: VariableUsage): Nothing {
 //    throw IllegalStateException("${identifiable.identifier} (${identifiable.javaClass.simpleName}) used before definition")
 //}
-
-fun Short.toBytes(): List<Byte> {
-    val high = (this.toInt() shr 8).toByte()
-    val low  = this.toByte()
-    return listOf(high, low)
-}

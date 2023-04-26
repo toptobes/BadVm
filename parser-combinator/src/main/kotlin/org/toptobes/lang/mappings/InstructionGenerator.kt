@@ -26,7 +26,8 @@ private val argSizes = mapOf(
     "REG8"  to 1,
     "IMM8"  to 1,
     "IMM16" to 2,
-    "MEM"   to 2,
+    "MEM16" to 2,
+    "MEM8"  to 2,
     "PTR"   to 1,
 )
 

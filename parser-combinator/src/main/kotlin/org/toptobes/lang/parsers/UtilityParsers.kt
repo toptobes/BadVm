@@ -73,7 +73,7 @@ fun variable(vars: VarDefs) = contextual { ctx ->
 
 fun wordVariable(vars: VarDefs) = variable(vars)
     .chain {
-        if (it !is WordVarDefinition) {
+        if (it !is WordInstance) {
             crash("not a word lol")
         } else {
             succeed(Imm16(it.word))
@@ -82,7 +82,7 @@ fun wordVariable(vars: VarDefs) = variable(vars)
 
 fun byteVariable(vars: VarDefs) = variable(vars)
     .chain {
-        if (it !is ByteVarDefinition) {
+        if (it !is ByteInstance) {
             crash("not a byte lol")
         } else {
             succeed(Imm8(it.byte))
@@ -95,9 +95,6 @@ fun memAddress(vars: VarDefs) = between.squareBrackets(imm16(vars)..{ ImmAddr(it
 
 val label = identifier
     .map(::Label)
-
-val constAsAddress = strOf("&", identifier)
-    .map(::AddrVariable)
 
 val nullptr = -str("?")
     .map { Imm16(0) }

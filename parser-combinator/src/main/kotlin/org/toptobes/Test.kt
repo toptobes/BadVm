@@ -5,10 +5,11 @@ import org.toptobes.lang.parsers.identifier
 import org.toptobes.lang.utils.StatefulParsingException
 import org.toptobes.lang.utils.StatelessParsingException
 import org.toptobes.lang.utils.Word
-import org.toptobes.parsercombinator.contextual
+import org.toptobes.parsercombinator.*
+import org.toptobes.parsercombinator.impls.crash
+import org.toptobes.parsercombinator.impls.fail
 import org.toptobes.parsercombinator.impls.sepBy
 import org.toptobes.parsercombinator.impls.str
-import org.toptobes.parsercombinator.unaryMinus
 
 /**
  * ```
@@ -93,64 +94,135 @@ import org.toptobes.parsercombinator.unaryMinus
  * Node myNode2 = Node { Word{2}, next: @mN1Addr.w }
  */
 fun main() {
-    val H = DefinedType("H", listOf(TypeDefinitionFieldByte("s")))
-    val h = TypeInstance("h", H, listOf(ByteVarDefinition("s", 1)))
+    val H = DefinedType("H", listOf(TypeDefinitionFieldByte("h")))
+    val h = TypeInstance("h1", H, listOf(ByteInstance("h", 1)))
+    val a = ByteInstance("h", 3).apply { allocType = Immediate }
 
-    val vars = MutNodes().apply {
+    val vars = MutIdentifiables().apply {
         typeDefs += H
-        varDefs  += h
+        varDefs += h
+        varDefs += a
     }
 
     try {
-        println(varUsage(vars)("@h.s"))
+        println(varUsage(vars)("h"))
     } catch (e: StatefulParsingException) {
         println(e.message!!)
     }
 }
 
-fun varUsage(nodes: Nodes) = contextual { ctx ->
-    val isDeref = ctx canTryParse -str('@')
+fun byteVarUsage(nodes: Identifiables) = varUsage(nodes)
+    .assureIsInstance<ByteOperand>()
 
+fun wordVarUsage(nodes: Identifiables) = varUsage(nodes)
+    .assureIsInstance<WordOperand>()
+
+fun byteAddrVarUsage(nodes: Identifiables) = varUsage(nodes)
+    .assureIsInstance<ByteAddrOperand>()
+
+fun wordAddrVarUsage(nodes: Identifiables) = varUsage(nodes)
+    .assureIsInstance<WordAddrOperand>()
+
+private inline fun <reified R> Parser<String, *>.assureIsInstance() = map {
+    (it as? R) ?: throw StatelessParsingException("Expected ${R::class.simpleName}, got ${it?.javaClass?.simpleName}")
+}
+
+fun varUsage(nodes: Identifiables) = contextual { ctx ->
+    val (isEmbedded, isDereffed) = ctx parse getVarUsageMetadata() or ccrash("Error getting variable usage metadata")
+
+    val definitions = ctx parse readVarUsage(nodes)                or ccrash("Error reading the variable itself")
+    val definition  = definitions.last()
+
+    if (definition !is StaticDefinition) {
+        throw StatelessParsingException("${definitions.last()} is not a static definition")
+    }
+
+    checkIfEmbedded(definition, isEmbedded)
+    checkIfImmediate(definition, isDereffed)
+    checkIfAllocated(definition, isDereffed)
+    crash("Error using variable $definition")
+}
+
+private fun getVarUsageMetadata() = contextual { ctx ->
+    val isEmbed = ctx canTryParse -str("...")
+    val isDeref = ctx canTryParse -str("@")
+
+    if (isEmbed && isDeref) {
+        crash("Variable can't be both embedded and dereferenced")
+    }
+
+    success(isEmbed to isDeref)
+}
+
+private fun readVarUsage(nodes: Identifiables) = contextual { ctx ->
     val cascadingNames = ctx parse sepBy.periods(-identifier, allowTrailingSep = false) or ccrash("No identifier found for variable usage")
     val firstName = cascadingNames[0]
     val first = nodes.varDefs[firstName]                                                or ccrash("No identifier with name ${cascadingNames[0]}")
 
-    val (_, variable) = cascadingNames.drop(1).fold(firstName to first) { (prevName, variable), name ->
+    val variables = cascadingNames.drop(1).runningFold(firstName to first) { (prevName, variable), name ->
         if (variable !is TypeInstance) {
             crash("Trying to call $name on non-defined-type $prevName")
         }
 
         val next = variable.fields.firstOrNull { it.identifier == name }                or ccrash("No identifier with name $name")
         next.identifier to next
-    }
+    }.map { it.second }
 
-    if (variable !is StaticDefinition) {
-        throw StatelessParsingException("$variable is not a static definition")
-    }
+    success(variables)
+}
 
-    when (variable) {
-        is ByteVarDefinition -> when {
-            isDeref -> crash("Can not deref byte variable $variable")
-            else -> ByteVariable(variable.identifier, variable.byte)
-        }
-        is WordVarDefinition -> when {
-            isDeref -> AddrVariable(variable.identifier)
-            else -> WordVariable(variable.identifier, variable.word)
-        }
-        is TypeInstance -> when (variable.varType) {
-            is Immediate -> when (variable.size) {
-                1 -> ByteVariable(variable.identifier, variable.toBytes()[0])
-                2 -> WordVariable(variable.identifier, variable.toBytes().toWord())
-                else -> crash("Can not have immediate of ")
-            }
-            is Embedded -> {
-                EmbeddedBytesVariable(variable.identifier, variable.toBytes())
-            }
-            else -> crash("Can not directly use a non-imm type instance")
-        }
+private fun ContextScope<VariableUsage>.checkIfEmbedded(definition: StaticDefinition, isEmbedded: Boolean) = when {
+    definition.allocType === Embedded && !isEmbedded -> {
+        crash("Use of embedded variable ${definition.identifier} without embedding")
     }
+    definition.allocType === Embedded -> {
+        success(EmbeddedBytesVariable(definition.identifier, definition, definition.toBytes()))
+    }
+    isEmbedded -> {
+        crash("Use of non-embedded variable ${definition.identifier} with embedding")
+    }
+    else -> null
+}
 
-    success(variable)
+private fun ContextScope<VariableUsage>.checkIfImmediate(definition: StaticDefinition, isDereffed: Boolean) = when {
+    definition.allocType === Immediate && isDereffed -> {
+        crash("Can not deref immediate variable ${definition.identifier}")
+    }
+    definition.allocType === Immediate && definition is ByteInstance -> {
+        success(ByteVariable(definition.identifier, definition.byte))
+    }
+    definition.allocType === Immediate && definition is WordInstance -> {
+        success(WordVariable(definition.identifier, definition.word))
+    }
+    definition.allocType === Immediate -> {
+        crash("Invalid immediate type $definition")
+    }
+    else -> null
+}
+
+private fun ContextScope<VariableUsage>.checkIfAllocated(definition: StaticDefinition, isDereffed: Boolean) = when {
+    definition.allocType !== Allocated -> {
+        crash("Var type is not allocated even though it should be wtf")
+    }
+    !isDereffed -> {
+        success(AddrHolderVariable(definition.identifier, definition))
+    }
+    definition is TypeInstance -> {
+        crash("Can not deref type instance directly")
+    }
+    definition is ByteInstance -> {
+        success(ByteAddrVariable(definition.identifier, definition))
+    }
+    definition is WordInstance -> {
+        success(WordAddrVariable(definition.identifier, definition))
+    }
+    else -> null
+}
+
+fun Word.toBytes(): List<Byte> {
+    val high = (this.toInt() shr 8).toByte()
+    val low  = this.toByte()
+    return listOf(high, low)
 }
 
 fun List<Byte>.toWord(): Word {
