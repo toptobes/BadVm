@@ -9,9 +9,12 @@ import org.toptobes.parsercombinator.*
 import org.toptobes.parsercombinator.impls.*
 
 fun variableDefinition(vars: MutVarDefs) = contextual { ctx ->
-    val isConst = (ctx tryParse -str("const")) != null
+    val isEmbedded  = ctx canTryParse -str("embed")
+    val isImmediate = ctx canTryParse -str("imm")
 
-    val isImmediate = (ctx tryParse -str("imm")) != null
+    if (isEmbedded && isImmediate) {
+        crash("Can't have a both embedded and immediate variable")
+    }
 
     val typeName = ctx parse -identifier or cfail("Not a @declaration")
 
@@ -32,8 +35,11 @@ fun variableDefinition(vars: MutVarDefs) = contextual { ctx ->
         else -> fail("Not a custom type @declaration")
     } or ccrash("Error with @$name declaration")
 
-    definition.isConstant  = isImmediate || isConst
-    definition.isImmediate = isImmediate
+    definition.varType = when {
+        isEmbedded  -> Embedded
+        isImmediate -> Immediate
+        else -> Allocated
+    }
 
     vars += name to definition
 
@@ -139,7 +145,7 @@ private fun parseConstructorArgs(type: DefinedType, vars: VarDefs) = contextual 
         val nextFieldType = if (isNamedConstructor) {
             ctx parse nextNamedTypeConstructorField(type, fields)       or ccrash("Error parsing (named) field in ${type.identifier} constructor")
         } else {
-            nextUnnamedTypeConstructorField(fields)
+            ctx parse nextUnnamedTypeConstructorField(fields)           or ccrash("Error parsing (unnamed) field in ${type.identifier} constructor")
         }
 
         val nextFieldName = nextFieldType.fieldName
@@ -165,9 +171,6 @@ private fun parseConstructorArgs(type: DefinedType, vars: VarDefs) = contextual 
             }
             is TypeDefinitionFieldType -> {
                 if (testVariableNext is TypeInstance) {
-                    if (!testVariableNext.isConstant) {
-                        crash("Trying to assign non-const ${testVariableNext.identifier} to field")
-                    }
                     testVariableNext
                 } else {
                     val constructor = typeConstructor(nextFieldType.typeFn().identifier, vars)
@@ -195,8 +198,13 @@ private fun parseConstructorArgs(type: DefinedType, vars: VarDefs) = contextual 
     success(values)
 }
 
-private fun nextUnnamedTypeConstructorField(fields: MutableList<TypeDefinitionField>) =
-    fields.removeFirst()
+private fun nextUnnamedTypeConstructorField(fields: MutableList<TypeDefinitionField>) = contextual { ctx ->
+    val field = fields.removeFirst()
+    val fieldName = field.fieldName
+
+    (ctx tryParse -strOf(fieldName, -str(":")))
+    success(field)
+}
 
 private fun nextNamedTypeConstructorField(type: DefinedType, fields: MutableList<TypeDefinitionField>) = contextual { ctx ->
     val fieldNameParser = -any(*fields.map { str(it.fieldName) }.toTypedArray())

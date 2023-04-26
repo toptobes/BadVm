@@ -2,21 +2,27 @@ package org.toptobes.lang.nodes
 
 import org.toptobes.lang.utils.Word
 
+sealed interface VariableType
+object Allocated : VariableType
+object Embedded  : VariableType
+object Immediate : VariableType
+
 sealed class Definition : Node, Identifiable {
     abstract val size: Int
-    var isImmediate = false
-    var isConstant  = false
-    var isExport    = false
+    var isExport = false
 }
 
-sealed class TypeDefinition     : Definition()
-sealed class VariableDefinition : Definition()
+sealed class TypeDefinition : Definition()
+
+sealed class VariableDefinition : Definition() {
+    var varType: VariableType = Allocated
+}
 
 sealed class StaticDefinition : VariableDefinition()
 sealed class VectorDefinition : VariableDefinition()
 
 data class LabelDefinition(override val identifier: String) : VariableDefinition() {
-    init { isImmediate = true; isConstant = true; isExport = false }
+    init { varType = Embedded; isExport = false }
     override val size = 2
 }
 
