@@ -2,14 +2,15 @@ package org.toptobes
 
 import org.toptobes.lang.nodes.*
 import org.toptobes.lang.parsers.identifier
+import org.toptobes.lang.parsers.variableDefinition
 import org.toptobes.lang.utils.StatefulParsingException
 import org.toptobes.lang.utils.StatelessParsingException
 import org.toptobes.lang.utils.Word
-import org.toptobes.parsercombinator.*
-import org.toptobes.parsercombinator.impls.crash
-import org.toptobes.parsercombinator.impls.fail
-import org.toptobes.parsercombinator.impls.sepBy
-import org.toptobes.parsercombinator.impls.str
+import org.toptobes.parsercombinator.ContextScope
+import org.toptobes.parsercombinator.Parser
+import org.toptobes.parsercombinator.contextual
+import org.toptobes.parsercombinator.impls.*
+import org.toptobes.parsercombinator.unaryMinus
 
 /**
  * ```
@@ -89,14 +90,22 @@ import org.toptobes.parsercombinator.impls.str
  * // Illegal
  * Node myNode2 = Node { Word{2}, next: @myNode1 }
  *
- * // Legal
- * Word mN1Addr = Word { @myNode1 }
+ * // Illegal
+ * Word mN1Addr = Word { myNode1 }
  * Node myNode2 = Node { Word{2}, next: @mN1Addr.w }
+ *
+ * // Legal
+ * embed Word mN1Addr = Word { myNode1 }
+ * Node myNode2 = Node { Word{2}, next: ...mN1Addr }
+ *
+ * // Legal
+ * imm Word mN1Addr = Word { myNode1 }
+ * Node myNode2 = Node { Word{2}, next: mN1Addr.w }
  */
 fun main() {
     val H = DefinedType("H", listOf(TypeDefinitionFieldByte("h")))
-    val h = TypeInstance("h1", H, listOf(ByteInstance("h", 1)))
-    val a = ByteInstance("h", 3).apply { allocType = Immediate }
+    val h = TypeInstance("h1", H, listOf(ByteInstance("h", 1).apply { allocType = Immediate }, ByteInstance("i", 0).apply { allocType = Immediate })).apply { allocType = Immediate }
+    val a = WordInstance("h", 3).apply { Embedded }
 
     val vars = MutIdentifiables().apply {
         typeDefs += H
@@ -105,7 +114,7 @@ fun main() {
     }
 
     try {
-        println(varUsage(vars)("h"))
+        println(variableDefinition(vars)("H h2 = H{1}"))
     } catch (e: StatefulParsingException) {
         println(e.message!!)
     }
@@ -123,14 +132,36 @@ fun byteAddrVarUsage(nodes: Identifiables) = varUsage(nodes)
 fun wordAddrVarUsage(nodes: Identifiables) = varUsage(nodes)
     .assureIsInstance<WordAddrOperand>()
 
-private inline fun <reified R> Parser<String, *>.assureIsInstance() = map {
+fun embeddedVarUsage(nodes: Identifiables) = varUsage(nodes)
+    .assureIsInstance<EmbeddedBytesVariable>()
+
+fun byteVarUsageOrCrash(nodes: Identifiables) = varUsage(nodes)
+    .assureIsInstanceCrashing<ByteOperand>()
+
+fun wordVarUsageOrCrash(nodes: Identifiables) = varUsage(nodes)
+    .assureIsInstanceCrashing<WordOperand>()
+
+fun byteAddrVarUsageOrCrash(nodes: Identifiables) = varUsage(nodes)
+    .assureIsInstanceCrashing<ByteAddrOperand>()
+
+fun wordAddrVarUsageOrCrash(nodes: Identifiables) = varUsage(nodes)
+    .assureIsInstanceCrashing<WordAddrOperand>()
+
+fun embeddedVarUsageOrCrash(nodes: Identifiables) = varUsage(nodes)
+    .assureIsInstanceCrashing<EmbeddedBytesVariable>()
+
+private inline fun <reified R> Parser<String, *>.assureIsInstance() = chain {
+    (it as? R)?.let(::succeed) ?: fail("Expected ${R::class.simpleName}, got ${it?.javaClass?.simpleName}")
+}
+
+private inline fun <reified R> Parser<String, *>.assureIsInstanceCrashing() = map {
     (it as? R) ?: throw StatelessParsingException("Expected ${R::class.simpleName}, got ${it?.javaClass?.simpleName}")
 }
 
 fun varUsage(nodes: Identifiables) = contextual { ctx ->
     val (isEmbedded, isDereffed) = ctx parse getVarUsageMetadata() or ccrash("Error getting variable usage metadata")
 
-    val definitions = ctx parse readVarUsage(nodes)                or ccrash("Error reading the variable itself")
+    val definitions = ctx parse readVarUsage(nodes)                or cfail("Error reading the variable itself")
     val definition  = definitions.last()
 
     if (definition !is StaticDefinition) {
@@ -155,16 +186,16 @@ private fun getVarUsageMetadata() = contextual { ctx ->
 }
 
 private fun readVarUsage(nodes: Identifiables) = contextual { ctx ->
-    val cascadingNames = ctx parse sepBy.periods(-identifier, allowTrailingSep = false) or ccrash("No identifier found for variable usage")
+    val cascadingNames = ctx parse sepBy.periods(-identifier, allowTrailingSep = false, requireMatch = true) or cfail("No identifier found for variable usage")
     val firstName = cascadingNames[0]
-    val first = nodes.varDefs[firstName]                                                or ccrash("No identifier with name ${cascadingNames[0]}")
+    val first = nodes.varDefs[firstName]                                                                     or ccrash("No identifier with name ${cascadingNames[0]}")
 
     val variables = cascadingNames.drop(1).runningFold(firstName to first) { (prevName, variable), name ->
         if (variable !is TypeInstance) {
             crash("Trying to call $name on non-defined-type $prevName")
         }
 
-        val next = variable.fields.firstOrNull { it.identifier == name }                or ccrash("No identifier with name $name")
+        val next = variable.fields.firstOrNull { it.identifier == name }                                     or ccrash("No identifier with name $name")
         next.identifier to next
     }.map { it.second }
 
@@ -173,7 +204,7 @@ private fun readVarUsage(nodes: Identifiables) = contextual { ctx ->
 
 private fun ContextScope<VariableUsage>.checkIfEmbedded(definition: StaticDefinition, isEmbedded: Boolean) = when {
     definition.allocType === Embedded && !isEmbedded -> {
-        crash("Use of embedded variable ${definition.identifier} without embedding")
+        crash("Use of embedded variable ${definition.identifier} without '...'")
     }
     definition.allocType === Embedded -> {
         success(EmbeddedBytesVariable(definition.identifier, definition, definition.toBytes()))
@@ -195,7 +226,7 @@ private fun ContextScope<VariableUsage>.checkIfImmediate(definition: StaticDefin
         success(WordVariable(definition.identifier, definition.word))
     }
     definition.allocType === Immediate -> {
-        crash("Invalid immediate type $definition")
+        crash("Invalid immediate type ${definition.javaClass.simpleName} ${definition.identifier}")
     }
     else -> null
 }

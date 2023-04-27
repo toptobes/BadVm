@@ -3,12 +3,12 @@
 package org.toptobes.lang.parsers
 
 import org.toptobes.lang.mappings.instructionParsers
+import org.toptobes.lang.nodes.Identifiables
 import org.toptobes.lang.nodes.Instruction
 import org.toptobes.lang.utils.StatefulParsingException
-import org.toptobes.lang.utils.VarDefs
 import org.toptobes.parsercombinator.*
 
-class instructionParser(val vars: VarDefs) : Parser<String, Instruction>() {
+class instructionParser(val vars: Identifiables) : Parser<String, Instruction>() {
     override fun parse(oldState: ParseState<String, *>): ParseState<String, out Instruction> {
         val line = oldState.target.substring(oldState.index).substringBefore("\r\n").substringBefore("\n")
         val name = line.substringBefore(" ")

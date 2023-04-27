@@ -3,8 +3,7 @@
 package org.toptobes.lang.parsers
 
 import org.toptobes.lang.nodes.*
-import org.toptobes.lang.utils.VarDefs
-import org.toptobes.parsercombinator.contextual
+import org.toptobes.lang.utils.UWord
 import org.toptobes.parsercombinator.impls.*
 import org.toptobes.parsercombinator.rangeTo
 import org.toptobes.parsercombinator.unaryMinus
@@ -34,7 +33,7 @@ private val number = any(
 
 val word = number
     .chain {
-        if (it > UShort.MAX_VALUE.toInt()) crash("$it is not imm16") else succeed(it.toShort())
+        if (it > UWord.MAX_VALUE.toInt()) crash("$it is not imm16") else succeed(it.toShort())
     }
 
 val byte = number
@@ -52,46 +51,9 @@ val identifier = sequence(
     optionally(regex("\\w+"), ""),
 ).map { it[0] + it[1] }
 
-fun variable(vars: VarDefs) = contextual { ctx ->
-    ctx tryParse -str("@")                                                             or cfail("Not a variable usage")
-
-    val cascadingNames = ctx parse sepBy.periods(identifier, allowTrailingSep = false) or ccrash("No identifier found for variable usage")
-    val firstName = cascadingNames[0]
-    val first = vars[firstName]                                                        or ccrash("No identifier with name ${cascadingNames[0]}")
-
-    val (_, variable) = cascadingNames.drop(1).fold(firstName to first) { (prevName, variable), name ->
-        if (variable !is TypeInstance) {
-            crash("Trying to call $name on non-defined-type $prevName")
-        }
-
-        val next = variable.fields.firstOrNull { it.identifier == name }               or ccrash("No identifier with name $name")
-        next.identifier to next
-    }
-
-    success(variable)
-}
-
-fun wordVariable(vars: VarDefs) = variable(vars)
-    .chain {
-        if (it !is WordInstance) {
-            crash("not a word lol")
-        } else {
-            succeed(Imm16(it.word))
-        }
-    }
-
-fun byteVariable(vars: VarDefs) = variable(vars)
-    .chain {
-        if (it !is ByteInstance) {
-            crash("not a byte lol")
-        } else {
-            succeed(Imm8(it.byte))
-        }
-    }
-
 // -- MEMORY --
 
-fun memAddress(vars: VarDefs) = between.squareBrackets(imm16(vars)..{ ImmAddr(it.value) })
+fun memAddress(vars: Identifiables) = between.squareBrackets(imm16(vars)..{ ImmAddr(it.value) })
 
 val label = identifier
     .map(::Label)

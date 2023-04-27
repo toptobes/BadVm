@@ -3,28 +3,27 @@
 package org.toptobes.lang.parsers
 
 import org.toptobes.lang.nodes.*
-import org.toptobes.lang.utils.MutVarDefs
 import org.toptobes.parsercombinator.*
 import org.toptobes.parsercombinator.impls.*
 
-fun typeDefinition(vars: MutVarDefs) = any(definedType(vars), declaredType(vars))
+fun typeDefinition(vars: MutIdentifiables) = any(definedType(vars), declaredType(vars))
 
-fun declaredType(vars: MutVarDefs) = contextual { ctx ->
+fun declaredType(vars: MutIdentifiables) = contextual { ctx ->
     ctx parse -str("declare")                                or cfail("Not a struct declaration")
     ctx parse -str("type")                                   or ccrash("No 'type' after 'declare'")
 
     val name = ctx parse identifier                          or ccrash("Error with struct name definition")
-    vars += name to DeclaredType(name)
+    vars.typeDefs += name to DeclaredType(name)
 
     success(NodeToDelete)
 }
 
-fun definedType(vars: MutVarDefs) = contextual { ctx ->
+fun definedType(vars: MutIdentifiables) = contextual { ctx ->
     ctx parse -str("type")                                  or cfail("Not a struct definition")
 
     val name = ctx parse identifier                         or ccrash("Error with struct name definition")
 
-    vars += name to DeclaredType(name)
+    vars.typeDefs += name to DeclaredType(name)
 
     ctx parse -equals                                       or ccrash("Struct $name missing equals")
 
@@ -38,11 +37,11 @@ fun definedType(vars: MutVarDefs) = contextual { ctx ->
         crash("Struct $name has duplicate field name(s)")
     }
 
-    vars += name to DefinedType(name, fields)
+    vars.typeDefs += name to DefinedType(name, fields)
     success(NodeToDelete)
 }
 
-private fun fieldsParser(typeName: String, vars: MutVarDefs) = contextual { ctx ->
+private fun fieldsParser(typeName: String, vars: MutIdentifiables) = contextual { ctx ->
     val fields = mutableListOf<TypeDefinitionField>()
     var hasMatched = false
 
@@ -64,14 +63,14 @@ private fun fieldsParser(typeName: String, vars: MutVarDefs) = contextual { ctx 
     }
 }
 
-private fun fieldParser(vars: MutVarDefs) = contextual { ctx ->
+private fun fieldParser(vars: MutIdentifiables) = contextual { ctx ->
     ctx parse -char
 
     val fieldConstructor =
         ctx.tryParse(-str("addr")) {
             val targetTypeName = ctx parse -identifier or ccrash("Addr @declaration missing identifier")
 
-            if (targetTypeName !in vars) {
+            if (targetTypeName !in vars.typeDefs) {
                 crash("Addr @declaration $targetTypeName not defined")
             }
 
@@ -93,20 +92,16 @@ private fun fieldParser(vars: MutVarDefs) = contextual { ctx ->
     success(fieldConstructor(name))
 }
 
-private fun typeFieldType(vars: MutVarDefs) = contextual { ctx ->
+private fun typeFieldType(vars: MutIdentifiables) = contextual { ctx ->
     val typeName = (ctx parse -identifier)
 
-    val type = vars[typeName]
+    val type = vars.typeDefs[typeName]
         ?: crash("$typeName is not a type (field)")
 
-    if (type !is TypeDefinition) {
-        crash("Tried to assign ${type.javaClass.name} to a type field")
-    }
-
-    success { vars[typeName]!! as TypeDefinition }
+    success { type }
 }
 
-private fun sumTypeParser(vars: MutVarDefs) = contextual { ctx ->
+private fun sumTypeParser(vars: MutIdentifiables) = contextual { ctx ->
     ctx parse -char
 
     val typeFn = ctx parse typeFieldType(vars) or ccrash("Sum type has invalid type")

@@ -2,14 +2,15 @@
 
 package org.toptobes.lang.mappings
 
+import org.toptobes.lang.nodes.Identifiables
 import org.toptobes.lang.nodes.Instruction
 import org.toptobes.lang.nodes.Node
 import org.toptobes.lang.nodes.Operand
 import org.toptobes.lang.parsers.operandParserMap
-import org.toptobes.lang.utils.VarDefs
-import org.toptobes.parsercombinator.*
+import org.toptobes.parsercombinator.contextual
 import org.toptobes.parsercombinator.impls.any
 import org.toptobes.parsercombinator.impls.str
+import org.toptobes.parsercombinator.unaryMinus
 import java.io.File
 
 data class InstructionMetadata(
@@ -18,7 +19,7 @@ data class InstructionMetadata(
     val opcode: Byte,
     val size: Int,
     val numArgs: Int,
-    val parser: (VarDefs) -> contextual<Instruction>,
+    val parser: (Identifiables) -> contextual<Instruction>,
 )
 
 private val argSizes = mapOf(
@@ -57,10 +58,10 @@ val instructions = File("../opcodes")
 
 val instructionParsers = instructions
     .mapValues { (_, list) ->
-        { vars: VarDefs -> any(*list.map { it.parser(vars) }.toTypedArray()) }
+        { vars: Identifiables -> any(*list.map { it.parser(vars) }.toTypedArray()) }
     }
 
-fun createInstructionParser(name: String, vararg args: String) = { vars: VarDefs ->
+fun createInstructionParser(name: String, vararg args: String) = { vars: Identifiables ->
     contextual { ctx ->
         (ctx parse -str(name)) ?: crash("Not an instruction")
 
