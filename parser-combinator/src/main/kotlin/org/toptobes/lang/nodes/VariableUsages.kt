@@ -25,7 +25,7 @@ data class ByteVariable(
 data class AddrHolderVariable(
     override val identifier: String,
     val to: StaticDefinition
-) : DehydratedVarUsage, WordOperand {
+) : DehydratedVarUsage, LateInitWordOperand {
     override var value by Delegates.notNull<Word>()
 }
 

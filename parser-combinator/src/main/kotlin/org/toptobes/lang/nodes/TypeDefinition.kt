@@ -21,6 +21,10 @@ sealed interface TypeDefinitionField : Node {
     val size: Int
 }
 
+data class TypeDefinitionFieldAddr(override val fieldName: String) : TypeDefinitionField {
+    override val size = 2
+}
+
 data class TypeDefinitionFieldWord(override val fieldName: String) : TypeDefinitionField {
     override val size = 2
 }

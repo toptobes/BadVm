@@ -103,18 +103,20 @@ import org.toptobes.parsercombinator.unaryMinus
  * Node myNode2 = Node { Word{2}, next: mN1Addr.w }
  */
 fun main() {
-    val H = DefinedType("H", listOf(TypeDefinitionFieldByte("h")))
-    val h = TypeInstance("h1", H, listOf(ByteInstance("h", 1).apply { allocType = Immediate }, ByteInstance("i", 0).apply { allocType = Immediate })).apply { allocType = Immediate }
-    val a = WordInstance("h", 3).apply { Embedded }
+    val H = DefinedType("H", listOf(TypeDefinitionFieldWord("next")))
+    val h = TypeInstance("h1", H, listOf(WordInstance("next", 0)))
+    val haddr = AddrHolderVariable("h1", h)
+    val a = WordInstance("h", 3).apply { allocType = Embedded }
 
     val vars = MutIdentifiables().apply {
         typeDefs += H
         varDefs += h
         varDefs += a
+        varUsages += haddr
     }
 
     try {
-        println(variableDefinition(vars)("H h2 = H{1}"))
+        println(varUsage(vars)("h1").result)
     } catch (e: StatefulParsingException) {
         println(e.message!!)
     }
@@ -131,6 +133,9 @@ fun byteAddrVarUsage(nodes: Identifiables) = varUsage(nodes)
 
 fun wordAddrVarUsage(nodes: Identifiables) = varUsage(nodes)
     .assureIsInstance<WordAddrOperand>()
+
+fun lateWordAddrVarUsage(nodes: Identifiables) = varUsage(nodes)
+    .assureIsInstance<LateInitWordOperand>()
 
 fun embeddedVarUsage(nodes: Identifiables) = varUsage(nodes)
     .assureIsInstance<EmbeddedBytesVariable>()
@@ -149,6 +154,9 @@ fun wordAddrVarUsageOrCrash(nodes: Identifiables) = varUsage(nodes)
 
 fun embeddedVarUsageOrCrash(nodes: Identifiables) = varUsage(nodes)
     .assureIsInstanceCrashing<EmbeddedBytesVariable>()
+
+fun lateWordAddrVarUsageOrCrash(nodes: Identifiables) = varUsage(nodes)
+    .assureIsInstance<LateInitWordOperand>()
 
 private inline fun <reified R> Parser<String, *>.assureIsInstance() = chain {
     (it as? R)?.let(::succeed) ?: fail("Expected ${R::class.simpleName}, got ${it?.javaClass?.simpleName}")

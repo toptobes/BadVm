@@ -6,22 +6,27 @@ interface Operand : Node {
     val operandAssociation: String
 }
 
-interface WordOperand : Operand {
+sealed interface WordOperand : Operand {
     override val operandAssociation get() = "IMM16"
     val value: Word
 }
 
-interface ByteOperand : Operand {
+sealed interface LateInitWordOperand : Operand {
+    override val operandAssociation get() = "IMM16"
+    var value: Word
+}
+
+sealed interface ByteOperand : Operand {
     override val operandAssociation get() = "IMM8"
     val value: Byte
 }
 
-interface WordAddrOperand : Operand {
+sealed interface WordAddrOperand : Operand {
     override val operandAssociation get() = "MEM16"
     val address: Word
 }
 
-interface ByteAddrOperand : Operand {
+sealed interface ByteAddrOperand : Operand {
     override val operandAssociation get() = "MEM8"
     val address: Word
 }

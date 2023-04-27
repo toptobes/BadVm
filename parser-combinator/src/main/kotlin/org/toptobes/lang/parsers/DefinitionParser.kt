@@ -4,7 +4,6 @@ package org.toptobes.lang.parsers
 
 import org.toptobes.*
 import org.toptobes.lang.nodes.*
-import org.toptobes.lang.utils.UWord
 import org.toptobes.lang.utils.Word
 import org.toptobes.parsercombinator.*
 import org.toptobes.parsercombinator.impls.*
@@ -61,7 +60,7 @@ private fun embeddedBytes(nodes: Identifiables) = contextual { ctx ->
     fail("Not an embedded bytes usage")
 }
 
-private fun byteVariableDefinition(name: String, nodes: Identifiables) = contextual { ctx ->
+private fun byteArrayBuilder(name: String) = contextual { ctx ->
     ctx.tryParse(between.squareBrackets(word..(Word::toString) then -str(",") then (byte..(Byte::toString) or str("it")))) { (n, _, init) ->
         val initializer = init.toByteOrNull() ?: if (init == "it") null else crash("Invalid initializer ($init) in byte array builder")
 
@@ -69,22 +68,52 @@ private fun byteVariableDefinition(name: String, nodes: Identifiables) = context
         success(ByteArrayInstance(name, bytes))
     }
 
-    ctx parse -equals or ccrash("@byte definition $name doesn't have equals nor size")
+    fail("Not a byte array builder")
+}
 
-    ctx.tryParse(cStyleArrayOf(any(embeddedBytes(nodes), byte..(::listOf), byteVarUsageOrCrash(nodes)..{ listOf(it.value) }))) {
-        success(ByteArrayInstance(name, it.flatten()))
-    }
-
+private fun singleByte(name: String, nodes: Identifiables) = contextual { ctx ->
     ctx.tryParse(byte) {
         success(ByteInstance(name, it))
+    }
+
+    ctx.tryParse(byteVarUsage(nodes)) {
+        success(ByteInstance(name, it.value))
+    }
+
+    ctx.tryParse(embeddedBytes(nodes)) {
+        if (it.size == 1) {
+            success(ByteInstance(name, it[0]))
+        }
+    }
+
+    fail("Not a single byte")
+}
+
+private fun byteArray(name: String, nodes: Identifiables) = contextual { ctx ->
+    ctx.tryParse(cStyleArrayOf(any(embeddedBytes(nodes), byte..(::listOf), byteVarUsageOrCrash(nodes)..{ listOf(it.value) }))) {
+        success(ByteArrayInstance(name, it.flatten()))
     }
 
     ctx.tryParse(string) {
         success(ByteArrayInstance(name, it))
     }
 
-    ctx.tryParse(byteVarUsage(nodes)) {
-        success(ByteInstance(name, it.value))
+    fail("Not a byte array")
+}
+
+private fun byteVariableDefinition(name: String, nodes: Identifiables) = contextual { ctx ->
+    ctx.tryParse(byteArrayBuilder(name)) {
+        success(it)
+    }
+
+    ctx parse -equals or ccrash("@byte definition $name doesn't have equals nor size")
+
+    ctx.tryParse(singleByte(name, nodes)) {
+        success(it)
+    }
+
+    ctx.tryParse(byteArray(name, nodes)) {
+        success(it)
     }
 
     crash("Error assigning @byte definition $name")
@@ -101,13 +130,7 @@ private fun embeddedWords(nodes: Identifiables) = contextual { ctx ->
     fail("Not an embedded words usage")
 }
 
-private fun wordVariableDefinition(name: String, nodes: Identifiables) = contextual { ctx ->
-    ctx.tryParse(-word) { numWords ->
-        val initializer = ((ctx tryParse -word)?.toInt() ?: 0).toShort()
-        val words = List(numWords.toInt()) { initializer }
-        success(WordArrayInstance(name, words))
-    }
-
+private fun wordArrayBuilder(name: String) = contextual { ctx ->
     ctx.tryParse(between.squareBrackets(word..(Word::toString) then -str(",") then (word..(Word::toString) or str("it")))) { (n, _, init) ->
         val initializer = init.toShortOrNull() ?: if (init == "it") null else crash("Invalid initializer ($init) in word array builder")
 
@@ -115,17 +138,65 @@ private fun wordVariableDefinition(name: String, nodes: Identifiables) = context
         success(WordArrayInstance(name, words))
     }
 
-    ctx parse -equals or ccrash("@word definition $name doesn't have equals nor size")
+    fail("Not a word array builder")
+}
 
-    ctx.tryParse(cStyleArrayOf(any(embeddedWords(nodes), word..(::listOf), wordVarUsageOrCrash(nodes)..{ listOf(it.value) }))) {
-        success(WordArrayInstance(name, it.flatten()))
-    }
-
+private fun singleWord(name: String, nodes: Identifiables) = contextual { ctx ->
     ctx.tryParse(word) {
         success(WordInstance(name, it))
     }
 
+    ctx.tryParse(wordVarUsage(nodes)) {
+        success(WordInstance(name, it.value))
+    }
+
+    ctx.tryParse(embeddedWords(nodes)) {
+        if (it.size == 1) {
+            success(WordInstance(name, it[0]))
+        }
+    }
+
+    fail("Not a single word")
+}
+
+private fun wordArray(name: String, nodes: Identifiables) = contextual { ctx ->
+    ctx.tryParse(cStyleArrayOf(any(embeddedWords(nodes), word..(::listOf), wordVarUsageOrCrash(nodes)..{ listOf(it.value) }))) {
+        success(WordArrayInstance(name, it.flatten()))
+    }
+
+    fail("Not a word array")
+}
+
+private fun wordVariableDefinition(name: String, nodes: Identifiables) = contextual { ctx ->
+    ctx.tryParse(wordArrayBuilder(name)) {
+        success(it)
+    }
+
+    ctx parse -equals or ccrash("@word definition $name doesn't have equals nor size")
+
+    ctx.tryParse(singleWord(name, nodes)) {
+        success(it)
+    }
+
+    ctx.tryParse(wordArray(name, nodes)) {
+        success(it)
+    }
+
     crash("Error assigning @word definition $name")
+}
+
+private fun addr(name: String, nodes: Identifiables) = contextual { ctx ->
+    ctx.tryParse(word) {
+        success(WordInstance(name, it))
+    }
+
+    ctx.tryParse(embeddedWords(nodes)) {
+        if (it.size == 1) {
+            success(WordInstance(name, it[0]))
+        }
+    }
+
+    fail("Not a single word")
 }
 
 private fun typeVariableDefinition(name: String, typeName: String, vars: Identifiables) = contextual { ctx ->
@@ -192,12 +263,13 @@ private fun parseConstructorArgs(type: DefinedType, vars: Identifiables) = conte
 
         values += when (nextFieldType) {
             is TypeDefinitionFieldByte -> {
-                val byte = (ctx parse imm8(vars)  or ccrash("Byte field '$nextFieldName' not being assigned byte in ${type.identifier} constructor")).value
-                ByteInstance(nextFieldName, byte)
+                ctx parse singleByte(nextFieldName, vars) or ccrash("byte field '$nextFieldName' not being assigned word in ${type.identifier} constructor")
             }
             is TypeDefinitionFieldWord -> {
-                val word = (ctx parse imm16(vars) or ccrash("Word field '$nextFieldName' not being assigned word in ${type.identifier} constructor")).value
-                WordInstance(nextFieldName, word)
+                ctx parse singleWord(nextFieldName, vars) or ccrash("word field '$nextFieldName' not being assigned word in ${type.identifier} constructor")
+            }
+            is TypeDefinitionFieldAddr -> {
+                ctx parse singleWord(nextFieldName, vars) or ccrash("word field '$nextFieldName' not being assigned word in ${type.identifier} constructor")
             }
             is TypeDefinitionFieldType -> {
                 val constructor = typeConstructor(nextFieldType.typeFn().identifier, vars)
