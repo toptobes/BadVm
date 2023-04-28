@@ -46,7 +46,7 @@ private fun fieldsParser(typeName: String, vars: MutIdentifiables) = contextual 
     var hasMatched = false
 
     while (true) {
-        val next = ctx peek -char                       or ccrash("EOF when parsing '$typeName' fields")
+        val next = (ctx peek -char) ?: break
 
         when (next) {
             '&' -> fields += ctx parse sumTypeParser(vars) or ccrash("Error adding '$typeName' fields from sum type")

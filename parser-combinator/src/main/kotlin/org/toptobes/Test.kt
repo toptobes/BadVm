@@ -1,8 +1,8 @@
 package org.toptobes
 
 import org.toptobes.lang.nodes.*
+import org.toptobes.lang.parseCode
 import org.toptobes.lang.parsers.identifier
-import org.toptobes.lang.parsers.variableDefinition
 import org.toptobes.lang.utils.StatefulParsingException
 import org.toptobes.lang.utils.StatelessParsingException
 import org.toptobes.lang.utils.Word
@@ -103,20 +103,18 @@ import org.toptobes.parsercombinator.unaryMinus
  * Node myNode2 = Node { Word{2}, next: mN1Addr.w }
  */
 fun main() {
-    val H = DefinedType("H", listOf(TypeDefinitionFieldWord("next")))
-    val h = TypeInstance("h1", H, listOf(WordInstance("next", 0)))
-    val haddr = AddrHolderVariable("h1", h)
-    val a = WordInstance("h", 3).apply { allocType = Embedded }
-
-    val vars = MutIdentifiables().apply {
-        typeDefs += H
-        varDefs += h
-        varDefs += a
-        varUsages += haddr
-    }
+    val code = """
+        type Node =
+          | addr Node next
+        
+        Node node = Node { next: [0] }
+        
+        _start:
+            mov ax, 3
+    """.trimIndent()
 
     try {
-        println(varUsage(vars)("h1").result)
+        println(parseCode(code))
     } catch (e: StatefulParsingException) {
         println(e.message!!)
     }
@@ -129,13 +127,13 @@ fun wordVarUsage(nodes: Identifiables) = varUsage(nodes)
     .assureIsInstance<WordOperand>()
 
 fun byteAddrVarUsage(nodes: Identifiables) = varUsage(nodes)
-    .assureIsInstance<ByteAddrOperand>()
+    .assureIsInstance<ByteAddrVariable>()
 
 fun wordAddrVarUsage(nodes: Identifiables) = varUsage(nodes)
-    .assureIsInstance<WordAddrOperand>()
+    .assureIsInstance<WordAddrVariable>()
 
-fun lateWordAddrVarUsage(nodes: Identifiables) = varUsage(nodes)
-    .assureIsInstance<LateInitWordOperand>()
+fun typeAddrVarUsage(nodes: Identifiables) = varUsage(nodes)
+    .assureIsInstance<TypeAddrVariable>()
 
 fun embeddedVarUsage(nodes: Identifiables) = varUsage(nodes)
     .assureIsInstance<EmbeddedBytesVariable>()
@@ -147,16 +145,16 @@ fun wordVarUsageOrCrash(nodes: Identifiables) = varUsage(nodes)
     .assureIsInstanceCrashing<WordOperand>()
 
 fun byteAddrVarUsageOrCrash(nodes: Identifiables) = varUsage(nodes)
-    .assureIsInstanceCrashing<ByteAddrOperand>()
+    .assureIsInstanceCrashing<ByteAddrVariable>()
 
 fun wordAddrVarUsageOrCrash(nodes: Identifiables) = varUsage(nodes)
-    .assureIsInstanceCrashing<WordAddrOperand>()
+    .assureIsInstanceCrashing<WordAddrVariable>()
 
 fun embeddedVarUsageOrCrash(nodes: Identifiables) = varUsage(nodes)
     .assureIsInstanceCrashing<EmbeddedBytesVariable>()
 
-fun lateWordAddrVarUsageOrCrash(nodes: Identifiables) = varUsage(nodes)
-    .assureIsInstance<LateInitWordOperand>()
+fun typeAddrVarUsageOrCrash(nodes: Identifiables) = varUsage(nodes)
+    .assureIsInstance<TypeAddrVariable>()
 
 private inline fun <reified R> Parser<String, *>.assureIsInstance() = chain {
     (it as? R)?.let(::succeed) ?: fail("Expected ${R::class.simpleName}, got ${it?.javaClass?.simpleName}")
@@ -167,9 +165,9 @@ private inline fun <reified R> Parser<String, *>.assureIsInstanceCrashing() = ma
 }
 
 fun varUsage(nodes: Identifiables) = contextual { ctx ->
-    val (isEmbedded, isDereffed) = ctx parse getVarUsageMetadata() or ccrash("Error getting variable usage metadata")
+    val (isEmbedded, isDereffed, isAddr) = ctx parse getVarUsageMetadata() or ccrash("Error getting variable usage metadata")
 
-    val definitions = ctx parse readVarUsage(nodes)                or cfail("Error reading the variable itself")
+    val definitions = ctx parse readVarUsage(nodes)                        or cfail("Error reading the variable itself")
     val definition  = definitions.last()
 
     if (definition !is StaticDefinition) {
@@ -178,25 +176,26 @@ fun varUsage(nodes: Identifiables) = contextual { ctx ->
 
     checkIfEmbedded(definition, isEmbedded)
     checkIfImmediate(definition, isDereffed)
-    checkIfAllocated(definition, isDereffed)
+    checkIfAllocated(definition, isDereffed, isAddr)
     crash("Error using variable $definition")
 }
 
 private fun getVarUsageMetadata() = contextual { ctx ->
     val isEmbed = ctx canTryParse -str("...")
     val isDeref = ctx canTryParse -str("@")
+    val isAddr  = ctx canTryParse -str("&")
 
     if (isEmbed && isDeref) {
         crash("Variable can't be both embedded and dereferenced")
     }
 
-    success(isEmbed to isDeref)
+    success(listOf(isEmbed, isDeref, isAddr))
 }
 
 private fun readVarUsage(nodes: Identifiables) = contextual { ctx ->
     val cascadingNames = ctx parse sepBy.periods(-identifier, allowTrailingSep = false, requireMatch = true) or cfail("No identifier found for variable usage")
     val firstName = cascadingNames[0]
-    val first = nodes.varDefs[firstName]                                                                     or ccrash("No identifier with name ${cascadingNames[0]}")
+    val first = nodes.varDefs[firstName]                                                                     or cfail("No identifier with name ${cascadingNames[0]}")
 
     val variables = cascadingNames.drop(1).runningFold(firstName to first) { (prevName, variable), name ->
         if (variable !is TypeInstance) {
@@ -239,12 +238,19 @@ private fun ContextScope<VariableUsage>.checkIfImmediate(definition: StaticDefin
     else -> null
 }
 
-private fun ContextScope<VariableUsage>.checkIfAllocated(definition: StaticDefinition, isDereffed: Boolean) = when {
+private fun ContextScope<VariableUsage>.checkIfAllocated(
+    definition: StaticDefinition,
+    isDereffed: Boolean,
+    isAddr: Boolean
+) = when {
     definition.allocType !== Allocated -> {
         crash("Var type is not allocated even though it should be wtf")
     }
+    !isAddr -> {
+        crash("No & when trying to get address of allocated var")
+    }
     !isDereffed -> {
-        success(AddrHolderVariable(definition.identifier, definition))
+        success(TypeAddrVariable(definition.identifier, definition))
     }
     definition is TypeInstance -> {
         crash("Can not deref type instance directly")

@@ -26,15 +26,16 @@ data class TypeInstance(override val identifier: String, val type: DefinedType, 
 
 fun ZeroedTypeInstance(identifier: String, type: DefinedType): TypeInstance {
     val fields = type.declaredFields.map { when (it) {
-        is TypeDefinitionFieldByte -> ByteInstance("", 0)
-        is TypeDefinitionFieldWord -> WordInstance("", 0)
+        is TypeDefinitionFieldByte -> ByteInstance(it.fieldName, 0)
+        is TypeDefinitionFieldWord -> WordInstance(it.fieldName, 0)
         is TypeDefinitionFieldType -> {
             val nestedType = it.typeFn()
             if (nestedType !is DefinedType) {
                 throw StatelessParsingException("Trying to create an instance of a non-defined-type ${nestedType.identifier}")
             }
-            ZeroedTypeInstance("", nestedType)
+            ZeroedTypeInstance(it.fieldName, nestedType)
         }
+        is TypeDefinitionFieldAddr -> WordInstance(it.fieldName, 0)
     }}
 
     return TypeInstance(identifier, type, fields)

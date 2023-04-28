@@ -22,24 +22,24 @@ data class ByteVariable(
     override val value: Byte
 ) : HydratedVarUsage, ByteOperand
 
-data class AddrHolderVariable(
-    override val identifier: String,
-    val to: StaticDefinition
-) : DehydratedVarUsage, LateInitWordOperand {
-    override var value by Delegates.notNull<Word>()
-}
-
-data class ByteAddrVariable(
+data class TypeAddrVariable(
     override val identifier: String,
     val to: StaticDefinition
 ) : DehydratedVarUsage, WordAddrOperand {
     override var address by Delegates.notNull<Word>()
 }
 
+data class ByteAddrVariable(
+    override val identifier: String,
+    val to: ByteInstance
+) : DehydratedVarUsage, ByteAddrOperand {
+    override var address by Delegates.notNull<Word>()
+}
+
 data class WordAddrVariable(
     override val identifier: String,
-    val to: StaticDefinition
-) : DehydratedVarUsage, ByteAddrOperand {
+    val to: WordInstance
+) : DehydratedVarUsage, WordAddrOperand {
     override var address by Delegates.notNull<Word>()
 }
 

@@ -10,11 +10,11 @@ import org.toptobes.parsercombinator.impls.*
 
 fun variableDefinition(nodes: MutIdentifiables) = contextual { ctx ->
     val modifiers = ctx parse pool(-str("alloc"), -str("embed"), -str("imm"), -str("export")) or ccrash("Error parsing variable keywords")
-    val isAllocated = "alloc" in modifiers
+    val isAllocated = "alloc" in modifiers || modifiers.isEmpty()
     val isEmbedded  = "embed" in modifiers
     val isImmediate = "imm"   in modifiers
 
-    if ((isAllocated != isEmbedded) && (isAllocated xor isEmbedded xor isImmediate)) {
+    if ((isAllocated == isEmbedded) && (isAllocated xor isEmbedded xor isImmediate)) {
         crash("Conflicting allocation type keywords")
     }
 
@@ -32,7 +32,7 @@ fun variableDefinition(nodes: MutIdentifiables) = contextual { ctx ->
             wordVariableDefinition(name, nodes)
         }
         in nodes.typeDefs -> {
-            typeVariableDefinition(name, typeName, nodes)
+            typeVariableDefinition(name, typeName, nodes, isAllocated)
         }
         else -> fail("Not a custom type @definition")
     } or ccrash("Error with @$name definition")
@@ -185,21 +185,23 @@ private fun wordVariableDefinition(name: String, nodes: Identifiables) = context
     crash("Error assigning @word definition $name")
 }
 
-private fun addr(name: String, nodes: Identifiables) = contextual { ctx ->
-    ctx.tryParse(word) {
+fun addr(name: String, nodes: Identifiables, isAllocated: Boolean) = contextual { ctx ->
+    ctx.tryParse(between.squareBrackets(word)) {
         success(WordInstance(name, it))
     }
 
-    ctx.tryParse(embeddedWords(nodes)) {
-        if (it.size == 1) {
-            success(WordInstance(name, it[0]))
-        }
+    if (!isAllocated) {
+        crash("Can't have a non-constant address field in a non-embedded type")
     }
 
-    fail("Not a single word")
+    ctx.tryParse(typeAddrVarUsage(nodes)) {
+        success(AddrInstance(name, it))
+    }
+
+    fail("Not an addr")
 }
 
-private fun typeVariableDefinition(name: String, typeName: String, vars: Identifiables) = contextual { ctx ->
+private fun typeVariableDefinition(name: String, typeName: String, vars: Identifiables, isAllocated: Boolean) = contextual { ctx ->
     val type = vars.typeDefs[typeName]!!
 
     if (type !is DefinedType) {
@@ -212,7 +214,7 @@ private fun typeVariableDefinition(name: String, typeName: String, vars: Identif
         success(ZeroedTypeInstance(name, type))
     }
 
-    val fields = ctx parse typeConstructor(type.identifier, vars) or ccrash("Error parsing @$name's fields")
+    val fields = ctx parse typeConstructor(type.identifier, vars, isAllocated) or ccrash("Error parsing @$name's fields")
     success(TypeInstance(name, type, fields))
 }
 
@@ -227,25 +229,25 @@ private val string = between.doubleQuotes(until(char) { it.result == '"' })
 
 // -- TYPE CONSTRUCTORS --
 
-private fun typeConstructor(typeName: String, vars: Identifiables): Parser<String, List<StaticDefinition>> = contextual { ctx ->
-    val type = vars.typeDefs[typeName]                                  or ccrash("'$typeName' is an invalid type name")
+private fun typeConstructor(typeName: String, vars: Identifiables, isAllocated: Boolean): Parser<String, List<StaticDefinition>> = contextual { ctx ->
+    val type = vars.typeDefs[typeName]                                   or ccrash("'$typeName' is an invalid type name")
 
     if (type !is DefinedType) {
         crash("Undefined type thunk ${type.identifier} trying to be constructed")
     }
 
-    ctx parse str(type.identifier)                                      or ccrash("'$typeName' constructor missing valid preceding name")
+    ctx parse str(type.identifier)                                       or ccrash("'$typeName' constructor missing valid preceding name")
 
-    ctx parse -str('{')                                                 or ccrash("'$typeName' constructor missing open {")
+    ctx parse -str('{')                                                  or ccrash("'$typeName' constructor missing open {")
 
-    val values = ctx parse parseConstructorArgs(type, vars)             or ccrash("'$typeName' error with parsing constructor args")
+    val values = ctx parse parseConstructorArgs(type, vars, isAllocated) or ccrash("'$typeName' error with parsing constructor args")
 
-    ctx parse -str('}')                                                 or ccrash("'$typeName' constructor missing close }")
+    ctx parse -str('}')                                                  or ccrash("'$typeName' constructor missing close }")
 
     success(values)
 }
 
-private fun parseConstructorArgs(type: DefinedType, vars: Identifiables) = contextual { ctx ->
+private fun parseConstructorArgs(type: DefinedType, vars: Identifiables, isAllocated: Boolean) = contextual { ctx ->
     val values = mutableListOf<StaticDefinition>()
     val fields = type.declaredFields.toMutableList()
 
@@ -263,16 +265,16 @@ private fun parseConstructorArgs(type: DefinedType, vars: Identifiables) = conte
 
         values += when (nextFieldType) {
             is TypeDefinitionFieldByte -> {
-                ctx parse singleByte(nextFieldName, vars) or ccrash("byte field '$nextFieldName' not being assigned word in ${type.identifier} constructor")
+                ctx parse singleByte(nextFieldName, vars)        or ccrash("byte field '$nextFieldName' not being assigned word in ${type.identifier} constructor")
             }
             is TypeDefinitionFieldWord -> {
-                ctx parse singleWord(nextFieldName, vars) or ccrash("word field '$nextFieldName' not being assigned word in ${type.identifier} constructor")
+                ctx parse singleWord(nextFieldName, vars)        or ccrash("word field '$nextFieldName' not being assigned word in ${type.identifier} constructor")
             }
             is TypeDefinitionFieldAddr -> {
-                ctx parse singleWord(nextFieldName, vars) or ccrash("word field '$nextFieldName' not being assigned word in ${type.identifier} constructor")
+                ctx parse addr(nextFieldName, vars, isAllocated) or ccrash("word field '$nextFieldName' not being assigned word in ${type.identifier} constructor")
             }
             is TypeDefinitionFieldType -> {
-                val constructor = typeConstructor(nextFieldType.typeFn().identifier, vars)
+                val constructor = typeConstructor(nextFieldType.typeFn().identifier, vars, isAllocated)
 
                 val nestedType =
                     (ctx.tryParse(str('?')) {

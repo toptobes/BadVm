@@ -11,11 +11,6 @@ sealed interface WordOperand : Operand {
     val value: Word
 }
 
-sealed interface LateInitWordOperand : Operand {
-    override val operandAssociation get() = "IMM16"
-    var value: Word
-}
-
 sealed interface ByteOperand : Operand {
     override val operandAssociation get() = "IMM8"
     val value: Byte

@@ -1,21 +1,34 @@
 package org.toptobes.lang.parsers
 
-import org.toptobes.lang.nodes.Pointer
-import org.toptobes.lang.nodes.Reg16
-import org.toptobes.lang.nodes.Reg8
+import org.toptobes.byteAddrVarUsage
 import org.toptobes.lang.mappings.reg16Codes
 import org.toptobes.lang.mappings.reg8Codes
-import org.toptobes.lang.nodes.Identifiables
-import org.toptobes.parsercombinator.impls.any
-import org.toptobes.parsercombinator.impls.between
-import org.toptobes.parsercombinator.impls.str
+import org.toptobes.lang.nodes.*
+import org.toptobes.parsercombinator.impls.*
+import org.toptobes.parsercombinator.rangeTo
+import org.toptobes.typeAddrVarUsage
+import org.toptobes.varUsage
+import org.toptobes.wordAddrVarUsage
 
 fun imm16(vars: Identifiables) = any(pureImm16, /*wordVariable(vars),*/ nullptr)
 fun imm8 (vars: Identifiables) = any(pureImm8,  /*byteVariable(vars)*/)
 
-fun mem(vars: Identifiables) = any(
-    memAddress(vars), /*wordVariable(vars),*/
-    label
+fun mem16(vars: Identifiables) = any(
+    varUsage(vars).chain { when(it) {
+        is TypeAddrVariable -> succeed(TypeAddrVariable(it.identifier, it.to))
+        is WordAddrVariable -> succeed(TypeAddrVariable(it.identifier, it.to))
+        else -> crash("Not mem16")
+    }},
+    label,
+    between.squareBrackets(word)..{ ImmAddr(it) },
+)
+
+fun mem8(vars: Identifiables) = any(
+    varUsage(vars).chain { when(it) {
+        is ByteAddrVariable -> succeed(ByteAddrVariable(it.identifier, it.to))
+        else -> crash("Not mem8")
+    }},
+    between.squareBrackets(word)..{ ImmAddr(it) },
 )
 
 fun reg16(ignored: Identifiables) = any(*reg16Codes.keys.map { str(it) }.toTypedArray())
@@ -32,7 +45,7 @@ val operandParserMap = mapOf(
     "REG8"  to ::reg8,
     "IMM16" to ::imm16,
     "IMM8"  to ::imm8,
-    "MEM16" to ::mem,
-//  "MEM8"  to ::mem,
+    "MEM16" to ::mem16,
+    "MEM8"  to ::mem8,
     "PTR"   to ::ptr,
 )
