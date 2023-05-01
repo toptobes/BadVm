@@ -1,8 +1,5 @@
 package org.toptobes.parsercombinator
 
-import org.toptobes.lang.utils.DescriptiveParsingException
-import org.toptobes.lang.utils.ParsingException
-
 class Context(initialState: ParseState<*>) {
     var state: ParseState<*> = initialState
         private set
@@ -10,12 +7,12 @@ class Context(initialState: ParseState<*>) {
     infix fun <R> parse(parser: Parser<R>): R? {
         val nextState = parser.parsePropagating(state)
         state = nextState
-        return nextState.result
+        return if (nextState.isOkay()) nextState.result else null
     }
 
     infix fun <R> peek(parser: Parser<R>): R? {
         val nextState = parser.parsePropagating(state)
-        return nextState.result
+        return if (nextState.isOkay()) nextState.result else null
     }
 
     infix fun <R> canPeek(parser: Parser<R>): Boolean {
@@ -25,10 +22,11 @@ class Context(initialState: ParseState<*>) {
     infix fun <R> tryParse(parser: Parser<R>): R? {
         val nextState = parser.parsePropagating(state)
 
-        if (nextState.isOkay) {
+        if (nextState.isOkay()) {
             state = nextState
+            return nextState.result
         }
-        return nextState.result
+        return null
     }
 
     inline fun <R, R2> tryParse(parser: Parser<R>, block: (R) -> R2): R2? {
@@ -42,11 +40,11 @@ class Context(initialState: ParseState<*>) {
 
 // I know this is terrible practice but whatever this is for myself so who cares
 private class ContextualParseSuccess(val result: Any?) : Exception()
-private class ContextualParseError(val errorInf: ErrorResult) : Exception()
+private class ContextualParseError(val errorMsg: String) : Exception()
 
-class ContextScope<R>(private val ctx: Context) {
+class ContextScope<R>(val ctx: Context) {
     fun fail(str: String): Nothing {
-        throw ContextualParseError(BasicErrorResult(str))
+        throw ContextualParseError(str)
     }
 
     fun crash(msg: String): Nothing {
@@ -72,9 +70,9 @@ fun <R> contextual(fn: ContextScope<R>.(Context) -> Nothing) = Parser { oldState
     try {
         ContextScope<R>(context).fn(context)
     } catch (e: ContextualParseSuccess) {
-        succeed(context.state, e.result as R)
+        success(context.state, e.result as R)
     } catch (e: ContextualParseError) {
-        errored<R>(context.state, e.errorInf)
+        errored(context.state, e.errorMsg)
     } catch (e: ParsingException) {
         throw DescriptiveParsingException(e.message!!, context.state)
     }

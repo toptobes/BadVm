@@ -1,5 +1,3 @@
-@file:Suppress("ClassName")
-
 package org.toptobes.parsercombinator.impls
 
 import org.toptobes.parsercombinator.Parser

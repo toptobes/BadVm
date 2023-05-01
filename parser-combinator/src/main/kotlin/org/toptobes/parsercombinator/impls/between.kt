@@ -6,40 +6,37 @@ import org.toptobes.parsercombinator.*
 
 fun <R> between(left: Parser<*>, content: Parser<R>, right: Parser<*> = left) = Parser { oldState ->
     val leftState = left.parsePropagating(oldState)
-    if (leftState.isErrored) {
-        return@Parser errored(leftState, SequenceError("between", leftState.index, 0, leftState.error!!))
+    if (leftState.isErrored()) {
+        return@Parser errored(leftState, "between: Could not match opening parser (${leftState.error})")
     }
 
     val targetState = content.parsePropagating(leftState)
-    if (targetState.isErrored) {
-        return@Parser errored(targetState, SequenceError("between", targetState.index, 1, targetState.error!!))
+    if (targetState.isErrored()) {
+        return@Parser errored(leftState, "between: Could not match content parser (${targetState.error})")
     }
 
     val rightState = right.parsePropagating(targetState)
-    if (rightState.isErrored) {
-        return@Parser errored(rightState, SequenceError("between", rightState.index, 2, rightState.error!!))
+    if (rightState.isErrored()) {
+        return@Parser errored(leftState, "between: Could not match closing parser (${rightState.error})")
     }
 
-    return@Parser succeed(rightState, targetState.result)
+    return@Parser success(rightState, targetState.result)
 }
 
-fun <NewT> betweenSquareBrackets(content: Parser<NewT>) =
+fun <T> betweenSquareBrackets(content: Parser<T>) =
     between(-str("["), content, -str("]"))
 
-fun <NewT> betweenCurlyBrackets(content: Parser<NewT>) =
+fun <T> betweenCurlyBrackets(content: Parser<T>) =
     between(-str("{"), content, -str("}"))
 
-fun <NewT> betweenParentheses(content: Parser<NewT>) =
+fun <T> betweenParentheses(content: Parser<T>) =
     between(-str("("), content, -str(")"))
 
-fun <NewT> betweenDoubleQuotes(content: Parser<NewT>) =
+fun <T> betweenDoubleQuotes(content: Parser<T>) =
     between(str("\""), content, str("\""))
 
-fun <NewT> betweenSingleQuotes(content: Parser<NewT>) =
+fun <T> betweenSingleQuotes(content: Parser<T>) =
     between(str("'"), content, str("'"))
 
-fun <NewT> betweenWhitespace(content: Parser<NewT>) =
-    between(whitespace, content, whitespace)
-
-fun <NewT> betweenOptionalWhitespace(content: Parser<NewT>) =
+fun <T> betweenWhitespace(content: Parser<T>) =
     between(-whitespace, content, -whitespace)
