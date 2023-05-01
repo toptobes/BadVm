@@ -1,25 +1,17 @@
-@file:Suppress("ClassName")
-
 package org.toptobes.parsercombinator.impls
 
 import org.toptobes.parsercombinator.*
-import java.util.*
-
-infix fun <R> Parser<R>.or(other: Parser<R>) =
-    any(this, other)
 
 fun <R> any(vararg parsers: Parser<R>) = Parser { oldState ->
-    val errors = mutableListOf<ErrorResult?>()
-
-    for (parser in parsers) {
+    val errors = parsers.fold(emptyList<String>()) { acc, parser ->
         val nextState = parser.parsePropagating(oldState)
 
-        if (nextState.isOkay) {
-            return@Parser nextState
+        if (nextState.isOkay()) {
+            return@Parser success(nextState)
         } else {
-            errors += nextState.error
+            acc + nextState.error
         }
     }
 
-    return@Parser errored(oldState, NoNonErrorsError("any", oldState.index, errors))
+    return@Parser errored(oldState, "any: No parser matches; errs = $errors")
 }

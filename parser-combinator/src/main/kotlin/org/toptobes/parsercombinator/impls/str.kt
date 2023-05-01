@@ -12,13 +12,13 @@ fun str(pattern: String) = Parser { oldState ->
     val subtarget = oldState.target.substring(oldState.index)
 
     if (subtarget.isEmpty()) {
-        return@Parser errored(oldState, EndOfInputError("str", oldState.index))
+        return@Parser errored(oldState, "str: EOF reading pattern")
     }
 
     if (!subtarget.startsWith(pattern)) {
-        return@Parser errored(oldState, MatchError("str", oldState.index, pattern))
+        return@Parser errored(oldState, "str: Could not match string $pattern")
     }
 
     val newIndex = oldState.index + pattern.length
-    return@Parser succeed(oldState, pattern, newIndex)
+    return@Parser success(oldState, pattern, newIndex)
 }

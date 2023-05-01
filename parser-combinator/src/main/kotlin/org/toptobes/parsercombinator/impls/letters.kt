@@ -1,21 +1,19 @@
-@file:Suppress("ClassName")
-
 package org.toptobes.parsercombinator.impls
 
 import org.toptobes.parsercombinator.*
 
 val letters = Parser { oldState ->
-    val subtarget = oldState.target.substring(oldState.index)
+    val subtarget = oldState.subtarget()
 
     if (subtarget.isEmpty()) {
-        return@Parser errored(oldState, EndOfInputError("letters", oldState.index))
+        return@Parser errored(oldState, "letters: EOF reading letter")
     }
 
     val letters = subtarget.takeWhile(Char::isLetter)
 
     if (letters.isEmpty()) {
-        return@Parser errored(oldState, MatchError("letters", oldState.index, "letters"))
+        return@Parser errored(oldState, "letters: Could not match a letter")
     }
 
-    return@Parser succeed(oldState, letters, oldState.index + letters.length)
+    return@Parser success(oldState, letters, oldState.index + letters.length)
 }

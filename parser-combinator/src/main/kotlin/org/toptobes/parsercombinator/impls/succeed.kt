@@ -3,8 +3,8 @@
 package org.toptobes.parsercombinator.impls
 
 import org.toptobes.parsercombinator.Parser
-import org.toptobes.parsercombinator.succeed
+import org.toptobes.parsercombinator.success
 
 fun <R> succeed(value: R) = Parser { oldState ->
-    succeed(oldState, value)
+    success(oldState, value)
 }

@@ -26,42 +26,42 @@ fun <R> sepBy(
 
         nextContentState = content.parsePropagating(nextSeparatorState)
 
-        if (nextContentState.isErrored) {
+        if (nextContentState.isErrored()) {
             lastOkayState = nextSeparatorState
 
             if (!allowTrailingSep && nextSeparatorState != oldState) {
-                return@Parser errored(prevNextContentState, TrailingSepError("sepBy", prevNextContentState.index, null))
+                return@Parser errored(prevNextContentState, "sepBy: Illegal trailing comma")
             }
             break
         } else {
-            results += nextContentState.result!!
+            results += nextContentState.result
         }
 
         nextSeparatorState = separator.parsePropagating(nextContentState)
 
-        if (nextSeparatorState.isErrored) {
+        if (nextSeparatorState.isErrored()) {
             lastOkayState = nextContentState
             break
         }
     }
 
     if (requireMatch && results.isEmpty()) {
-        return@Parser errored(nextSeparatorState, NoMatchError("sepBy", nextSeparatorState.index))
+        return@Parser errored(nextSeparatorState, "sepBy: No matches found")
     }
 
-    return@Parser succeed(lastOkayState, results)
+    return@Parser success(lastOkayState, results)
 }
 
-fun <NewT> commas(content: Parser<NewT>, allowTrailingSep: Boolean = true, requireMatch: Boolean = false) =
+fun <NewT> sepByCommas(content: Parser<NewT>, allowTrailingSep: Boolean = true, requireMatch: Boolean = false) =
     sepBy(content, -str(","), allowTrailingSep, requireMatch)
 
-fun <NewT> periods(content: Parser<NewT>, allowTrailingSep: Boolean = true, requireMatch: Boolean = false) =
+fun <NewT> sepByPeriods(content: Parser<NewT>, allowTrailingSep: Boolean = true, requireMatch: Boolean = false) =
     sepBy(content, -str("."), allowTrailingSep, requireMatch)
 
-fun <NewT> whitespace(content: Parser<NewT>, allowTrailingSep: Boolean = true, requireMatch: Boolean = false) =
+fun <NewT> sepByWhitespace(content: Parser<NewT>, allowTrailingSep: Boolean = true, requireMatch: Boolean = false) =
     sepBy(content, whitespace, allowTrailingSep, requireMatch)
 
-fun <NewT> optionalWhitespace(
+fun <NewT> sepByOptionalWhitespace(
     content: Parser<NewT>,
     allowTrailingSep: Boolean = true,
     requireMatch: Boolean = false

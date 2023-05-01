@@ -1,5 +1,3 @@
-@file:Suppress("ClassName")
-
 package org.toptobes.parsercombinator.impls
 
 import org.toptobes.parsercombinator.*
@@ -7,10 +5,10 @@ import org.toptobes.parsercombinator.*
 fun <R> until(
     parser: Parser<R>,
     checkAtEndOfLoop: Boolean = false,
-    condition: (ParseState<out R>) -> Boolean,
+    condition: (ParseState<R>) -> Boolean,
 ) = Parser { oldState ->
     val results = mutableListOf<R>()
-    var nextState: ParseState<*> = oldState
+    var nextState = oldState
 
     while (true) {
         val testState = parser.parsePropagating(nextState)
@@ -18,16 +16,16 @@ fun <R> until(
         if (!checkAtEndOfLoop && condition(testState))
             break
 
-        if (testState.isErrored) {
+        if (testState.isErrored()) {
             return@Parser errored(testState)
         }
 
         nextState = testState
-        results += nextState.result!!
+        results += nextState.result
 
         if (checkAtEndOfLoop && condition(testState))
             break
     }
 
-    return@Parser succeed(nextState, results)
+    return@Parser success(nextState, results)
 }

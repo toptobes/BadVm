@@ -9,17 +9,17 @@ fun regex(pattern: String, matchIndex: Int = 0): Parser<String> {
 }
 
 fun regex(pattern: Regex, matchIndex: Int = 0) = Parser { oldState ->
-    val subtarget = oldState.target.substring(oldState.index)
+    val subtarget = oldState.subtarget()
 
     if (subtarget.isEmpty()) {
-        return@Parser errored(oldState, EndOfInputError("regex", oldState.index))
+        return@Parser errored(oldState, "regex: EOF matching regex")
     }
 
     val match = pattern.matchAt(subtarget, 0)
 
     if (match?.value == null) {
-        return@Parser errored(oldState, MatchError("regex", oldState.index, pattern.toString()))
+        return@Parser errored(oldState, "regex: Couldn't match given pattern ${pattern.pattern}")
     }
 
-    return@Parser succeed(oldState, match.groupValues[matchIndex], oldState.index + match.value.length)
+    return@Parser success(oldState, match.groupValues[matchIndex], oldState.index + match.value.length)
 }

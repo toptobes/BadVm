@@ -15,16 +15,16 @@ fun <R> upto(
     for (i in 0 until max) {
         val testState = parser.parsePropagating(nextState)
 
-        if (testState.isErrored) {
+        if (testState.isErrored()) {
             break
         }
         nextState = testState
-        results += nextState.result!!
+        results += nextState.result
     }
 
     if (requireMatch && results.isEmpty()) {
-        return@Parser errored(oldState, NoMatchError("repeatedly", oldState.index))
+        return@Parser errored(oldState, "repeatedly: Could not match any times")
     }
 
-    return@Parser succeed(nextState, results)
+    return@Parser success(nextState, results)
 }
