@@ -15,7 +15,7 @@ fun declaredType(vars: MutIdentifiables) = contextual { ctx ->
     val name = ctx parse identifier                          or ccrash("Error with struct name definition")
     vars.typeDefs += name to DeclaredType(name)
 
-    success(NodeToDelete)
+    succeed(NodeToDelete)
 }
 
 fun definedType(vars: MutIdentifiables) = contextual { ctx ->
@@ -38,7 +38,7 @@ fun definedType(vars: MutIdentifiables) = contextual { ctx ->
     }
 
     vars.typeDefs += name to DefinedType(name, fields)
-    success(NodeToDelete)
+    succeed(NodeToDelete)
 }
 
 private fun fieldsParser(typeName: String, vars: MutIdentifiables) = contextual { ctx ->
@@ -57,7 +57,7 @@ private fun fieldsParser(typeName: String, vars: MutIdentifiables) = contextual 
     }
 
     if (hasMatched) {
-        success(fields)
+        succeed(fields)
     } else {
         crash("Type has no fields")
     }
@@ -89,7 +89,7 @@ private fun fieldParser(vars: MutIdentifiables) = contextual { ctx ->
 
     val name = (ctx parse -identifier) ?: crash("Error with custom type field name")
 
-    success(fieldConstructor(name))
+    succeed(fieldConstructor(name))
 }
 
 private fun typeFieldType(vars: MutIdentifiables) = contextual { ctx ->
@@ -98,7 +98,7 @@ private fun typeFieldType(vars: MutIdentifiables) = contextual { ctx ->
     val type = vars.typeDefs[typeName]
         ?: crash("$typeName is not a type (field)")
 
-    success { type }
+    succeed { type }
 }
 
 private fun sumTypeParser(vars: MutIdentifiables) = contextual { ctx ->
@@ -111,5 +111,5 @@ private fun sumTypeParser(vars: MutIdentifiables) = contextual { ctx ->
         crash("Undefined type thunk ${type.identifier} trying to be summed")
     }
 
-    success(type.declaredFields)
+    succeed(type.declaredFields)
 }

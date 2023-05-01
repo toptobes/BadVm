@@ -2,12 +2,9 @@
 
 package org.toptobes.parsercombinator.impls
 
-import org.toptobes.parsercombinator.ParseState
 import org.toptobes.parsercombinator.Parser
-import org.toptobes.parsercombinator.success
+import org.toptobes.parsercombinator.succeed
 
-class succeed<T, R>(val value: R) : Parser<T, R>() {
-    override fun parse(oldState: ParseState<T, *>): ParseState<T, out R> {
-        return success(oldState, value)
-    }
+fun <R> succeed(value: R) = Parser { oldState ->
+    succeed(oldState, value)
 }

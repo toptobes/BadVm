@@ -4,21 +4,21 @@ package org.toptobes.parsercombinator.impls
 
 import org.toptobes.parsercombinator.*
 
-class str(val pattern: String) : Parser<String, String>() {
-    constructor(pattern: Char) : this(pattern.toString())
+fun str(pattern: Char): Parser<String> {
+    return str(pattern.toString())
+}
 
-    override fun parse(oldState: ParseState<String, *>): ParseState<String, out String> {
-        val subtarget = oldState.target.substring(oldState.index)
+fun str(pattern: String) = Parser { oldState ->
+    val subtarget = oldState.target.substring(oldState.index)
 
-        if (subtarget.isEmpty()) {
-            return errored(oldState, EndOfInputError("str", oldState.index))
-        }
-
-        if (!subtarget.startsWith(pattern)) {
-            return errored(oldState, MatchError("str", oldState.index, pattern))
-        }
-
-        val newIndex = oldState.index + pattern.length
-        return success(oldState, pattern, newIndex)
+    if (subtarget.isEmpty()) {
+        return@Parser errored(oldState, EndOfInputError("str", oldState.index))
     }
+
+    if (!subtarget.startsWith(pattern)) {
+        return@Parser errored(oldState, MatchError("str", oldState.index, pattern))
+    }
+
+    val newIndex = oldState.index + pattern.length
+    return@Parser succeed(oldState, pattern, newIndex)
 }

@@ -4,8 +4,9 @@ package org.toptobes.parsercombinator.impls
 
 import org.toptobes.parsercombinator.*
 
-class repeat<T, R>(val parser: Parser<T, R>, val times: Int) : Parser<T, List<R>>() {
-    override fun parse(oldState: ParseState<T, *>): ParseState<T, out List<R>> {
-        return sequence(*Array(times) { parser }).parsePropagating(oldState)
-    }
+operator fun <R> Parser<R>.times(times: Int) =
+    repeat(this, times)
+
+fun <R> repeat(parser: Parser<R>, times: Int) = Parser { oldState ->
+    sequence(*Array(times) { parser }).parsePropagating(oldState)
 }

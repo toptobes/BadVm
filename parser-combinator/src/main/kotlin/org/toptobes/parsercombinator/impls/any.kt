@@ -5,22 +5,21 @@ package org.toptobes.parsercombinator.impls
 import org.toptobes.parsercombinator.*
 import java.util.*
 
-class any<T, R>(
-    vararg val parsers: Parser<T, R>
-) : Parser<T, R>() {
-    override fun parse(oldState: ParseState<T, *>): ParseState<T, out R> {
-        val errors = mutableListOf<ErrorResult?>()
+infix fun <R> Parser<R>.or(other: Parser<R>) =
+    any(this, other)
 
-        for (parser in parsers) {
-            val nextState = parser.parsePropagating(oldState)
+fun <R> any(vararg parsers: Parser<R>) = Parser { oldState ->
+    val errors = mutableListOf<ErrorResult?>()
 
-            if (nextState.isOkay) {
-                return nextState
-            } else {
-                errors += nextState.error
-            }
+    for (parser in parsers) {
+        val nextState = parser.parsePropagating(oldState)
+
+        if (nextState.isOkay) {
+            return@Parser nextState
+        } else {
+            errors += nextState.error
         }
-
-        return errored(oldState, NoNonErrorsError("any", oldState.index, errors))
     }
+
+    return@Parser errored(oldState, NoNonErrorsError("any", oldState.index, errors))
 }

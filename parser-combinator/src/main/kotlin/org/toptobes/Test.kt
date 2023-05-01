@@ -189,7 +189,7 @@ private fun getVarUsageMetadata() = contextual { ctx ->
         crash("Variable can't be both embedded and dereferenced")
     }
 
-    success(listOf(isEmbed, isDeref, isAddr))
+    succeed(listOf(isEmbed, isDeref, isAddr))
 }
 
 private fun readVarUsage(nodes: Identifiables) = contextual { ctx ->
@@ -206,7 +206,7 @@ private fun readVarUsage(nodes: Identifiables) = contextual { ctx ->
         next.identifier to next
     }.map { it.second }
 
-    success(variables)
+    succeed(variables)
 }
 
 private fun ContextScope<VariableUsage>.checkIfEmbedded(definition: StaticDefinition, isEmbedded: Boolean) = when {
@@ -214,7 +214,7 @@ private fun ContextScope<VariableUsage>.checkIfEmbedded(definition: StaticDefini
         crash("Use of embedded variable ${definition.identifier} without '...'")
     }
     definition.allocType === Embedded -> {
-        success(EmbeddedBytesVariable(definition.identifier, definition, definition.toBytes()))
+        succeed(EmbeddedBytesVariable(definition.identifier, definition, definition.toBytes()))
     }
     isEmbedded -> {
         crash("Use of non-embedded variable ${definition.identifier} with embedding")
@@ -227,10 +227,10 @@ private fun ContextScope<VariableUsage>.checkIfImmediate(definition: StaticDefin
         crash("Can not deref immediate variable ${definition.identifier}")
     }
     definition.allocType === Immediate && definition is ByteInstance -> {
-        success(ByteVariable(definition.identifier, definition.byte))
+        succeed(ByteVariable(definition.identifier, definition.byte))
     }
     definition.allocType === Immediate && definition is WordInstance -> {
-        success(WordVariable(definition.identifier, definition.word))
+        succeed(WordVariable(definition.identifier, definition.word))
     }
     definition.allocType === Immediate -> {
         crash("Invalid immediate type ${definition.javaClass.simpleName} ${definition.identifier}")
@@ -250,16 +250,16 @@ private fun ContextScope<VariableUsage>.checkIfAllocated(
         crash("No & when trying to get address of allocated var")
     }
     !isDereffed -> {
-        success(TypeAddrVariable(definition.identifier, definition))
+        succeed(TypeAddrVariable(definition.identifier, definition))
     }
     definition is TypeInstance -> {
         crash("Can not deref type instance directly")
     }
     definition is ByteInstance -> {
-        success(ByteAddrVariable(definition.identifier, definition))
+        succeed(ByteAddrVariable(definition.identifier, definition))
     }
     definition is WordInstance -> {
-        success(WordAddrVariable(definition.identifier, definition))
+        succeed(WordAddrVariable(definition.identifier, definition))
     }
     else -> null
 }

@@ -2,20 +2,17 @@
 
 package org.toptobes.parsercombinator.impls
 
-import org.toptobes.parsercombinator.ParseState
 import org.toptobes.parsercombinator.Parser
 import org.toptobes.parsercombinator.isOkay
-import org.toptobes.parsercombinator.success
+import org.toptobes.parsercombinator.succeed
 
-class optionally<T, R>(
-    val parser: Parser<T, R>,
-    val default: R
-) : Parser<T, R>() {
-    override fun parse(oldState: ParseState<T, *>): ParseState<T, out R> {
-        val newState = parser.parsePropagating(oldState)
+operator fun Parser<String>.not() =
+    this withDefault ""
 
-        val result = if (newState.isOkay) newState.result else default
-        val index  = if (newState.isOkay) newState.index  else oldState.index
-        return success(newState, result, index)
-    }
+infix fun <R> Parser<R>.withDefault(default: R) = Parser { oldState ->
+    val newState = this.parsePropagating(oldState)
+
+    val result = if (newState.isOkay) newState.result else default
+    val index  = if (newState.isOkay) newState.index else oldState.index
+    succeed(newState, result, index)
 }

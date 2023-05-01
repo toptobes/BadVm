@@ -4,51 +4,42 @@ package org.toptobes.parsercombinator.impls
 
 import org.toptobes.parsercombinator.*
 
-// sigh
-class between<T, R>(
-    val left:    Parser<T, *>,
-    val content: Parser<T, R>,
-    val right:   Parser<T, *> = left,
-) : Parser<T, R>() {
-    override fun parse(oldState: ParseState<T, *>): ParseState<T, out R> {
-        val leftState = left.parsePropagating(oldState)
-        if (leftState.isErrored) {
-            return errored(leftState, SequenceError("between", leftState.index, 0, leftState.error!!))
-        }
-
-        val targetState = content.parsePropagating(leftState)
-        if (targetState.isErrored) {
-            return errored(targetState, SequenceError("between", targetState.index, 1, targetState.error!!))
-        }
-
-        val rightState = right.parsePropagating(targetState)
-        if (rightState.isErrored) {
-            return errored(rightState, SequenceError("between", rightState.index, 2, rightState.error!!))
-        }
-
-        return success(rightState, targetState.result)
+fun <R> between(left: Parser<*>, content: Parser<R>, right: Parser<*> = left) = Parser { oldState ->
+    val leftState = left.parsePropagating(oldState)
+    if (leftState.isErrored) {
+        return@Parser errored(leftState, SequenceError("between", leftState.index, 0, leftState.error!!))
     }
 
-    companion object {
-        fun <NewT> squareBrackets(content: Parser<String, NewT>) =
-            between(-str("["), content, -str("]"))
-
-        fun <NewT> curlyBrackets(content: Parser<String, NewT>) =
-            between(-str("{"), content, -str("}"))
-
-        fun <NewT> parentheses(content: Parser<String, NewT>) =
-            between(-str("("), content, -str(")"))
-
-        fun <NewT> doubleQuotes(content: Parser<String, NewT>) =
-            between(str("\""), content, str("\""))
-
-        fun <NewT> singleQuotes(content: Parser<String, NewT>) =
-            between(str("'"), content, str("'"))
-
-        fun <NewT> whitespace(content: Parser<String, NewT>) =
-            between(whitespace, content, whitespace)
-
-        fun <NewT> optionalWhitespace(content: Parser<String, NewT>) =
-            between(-whitespace, content, -whitespace)
+    val targetState = content.parsePropagating(leftState)
+    if (targetState.isErrored) {
+        return@Parser errored(targetState, SequenceError("between", targetState.index, 1, targetState.error!!))
     }
+
+    val rightState = right.parsePropagating(targetState)
+    if (rightState.isErrored) {
+        return@Parser errored(rightState, SequenceError("between", rightState.index, 2, rightState.error!!))
+    }
+
+    return@Parser succeed(rightState, targetState.result)
 }
+
+fun <NewT> betweenSquareBrackets(content: Parser<NewT>) =
+    between(-str("["), content, -str("]"))
+
+fun <NewT> betweenCurlyBrackets(content: Parser<NewT>) =
+    between(-str("{"), content, -str("}"))
+
+fun <NewT> betweenParentheses(content: Parser<NewT>) =
+    between(-str("("), content, -str(")"))
+
+fun <NewT> betweenDoubleQuotes(content: Parser<NewT>) =
+    between(str("\""), content, str("\""))
+
+fun <NewT> betweenSingleQuotes(content: Parser<NewT>) =
+    between(str("'"), content, str("'"))
+
+fun <NewT> betweenWhitespace(content: Parser<NewT>) =
+    between(whitespace, content, whitespace)
+
+fun <NewT> betweenOptionalWhitespace(content: Parser<NewT>) =
+    between(-whitespace, content, -whitespace)

@@ -2,12 +2,9 @@
 
 package org.toptobes.parsercombinator.impls
 
-import org.toptobes.lang.utils.StatelessParsingException
-import org.toptobes.parsercombinator.ParseState
+import org.toptobes.lang.utils.ParsingException
 import org.toptobes.parsercombinator.Parser
 
-class crash<T>(val msg: String) : Parser<T, Nothing>() {
-    override fun parse(oldState: ParseState<T, *>): ParseState<T, out Nothing> {
-        throw StatelessParsingException(msg)
-    }
+fun crash(msg: String) = Parser<Nothing> {
+    throw ParsingException(msg)
 }

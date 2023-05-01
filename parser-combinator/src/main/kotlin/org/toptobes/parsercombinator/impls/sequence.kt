@@ -4,37 +4,48 @@ package org.toptobes.parsercombinator.impls
 
 import org.toptobes.parsercombinator.*
 
-class sequence<T, R>(
-    vararg val parsers: Parser<T, R>,
-    val onError: OnError = CompletelyError
-) : Parser<T, List<R>>() {
-    override fun parse(oldState: ParseState<T, *>): ParseState<T, out List<R>> {
-        val results = mutableListOf<R>()
-        var nextState: ParseState<T, *> = oldState
+operator fun <R, R2> Parser<R>.rangeTo(mapper: (R) -> R2) =
+    this.map(mapper)
 
-        for ((index, parser) in parsers.withIndex()) {
-            nextState = parser.parsePropagating(nextState)
+infix fun <R> Parser<R>.rangeTo(other: Parser<R>) =
+    sequence(this, other)
 
-            when (onError) {
-                CompletelyError -> {
-                    if (nextState.isErrored) {
-                        return errored(oldState, SequenceError("Sequence", nextState.index, index, nextState.error!!))
-                    }
+infix fun <R> Parser<List<R>>.rangeTo(other: Parser<R>) =
+    this.chain { list -> other.map { list + it } }
 
-                    results += nextState.result!!
+fun <R> sequence(
+    vararg parsers: Parser<R>,
+    onError: OnError = CompletelyError
+) = Parser { oldState ->
+    val results = mutableListOf<R>()
+    var nextState: ParseState<*> = oldState
+
+    for ((index, parser) in parsers.withIndex()) {
+        nextState = parser.parsePropagating(nextState)
+
+        when (onError) {
+            CompletelyError -> {
+                if (nextState.isErrored) {
+                    return@Parser errored(
+                        oldState,
+                        SequenceError("Sequence", nextState.index, index, nextState.error!!)
+                    )
                 }
-                IgnoreErrors -> {
-                    if (nextState.isOkay) {
-                        results += nextState.result!!
-                    }
+
+                results += nextState.result!!
+            }
+
+            IgnoreErrors -> {
+                if (nextState.isOkay) {
+                    results += nextState.result!!
                 }
             }
         }
-
-        return success(nextState, results)
     }
 
-    sealed interface OnError
-    object CompletelyError : OnError
-    object IgnoreErrors    : OnError
+    return@Parser succeed(nextState, results)
 }
+
+sealed interface OnError
+object CompletelyError : OnError
+object IgnoreErrors : OnError

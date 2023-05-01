@@ -2,9 +2,9 @@ package org.toptobes.lang.utils
 
 import org.toptobes.parsercombinator.ParseState
 
-class StatelessParsingException(msg: String): Exception(msg)
+class ParsingException(msg: String): Exception(msg)
 
-class StatefulParsingException(msg: String, state: ParseState<String, *>) : Exception("""
+class DescriptiveParsingException(msg: String, state: ParseState<String, *>) : Exception("""
     |> ${state.getErrorLine()} <|
     ${state.getErrorIndexArrow()}
     ERROR: $msg

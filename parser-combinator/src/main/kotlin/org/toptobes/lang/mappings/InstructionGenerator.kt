@@ -78,7 +78,7 @@ fun createInstructionParser(name: String, vararg args: String) = { vars: Identif
             acc + parsed
         }
 
-        success(Instruction(name, parsedArgs))
+        succeed(Instruction(name, parsedArgs))
     }
 }
 

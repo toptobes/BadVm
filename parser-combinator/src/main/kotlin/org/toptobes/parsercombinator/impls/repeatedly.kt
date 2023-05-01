@@ -4,29 +4,27 @@ package org.toptobes.parsercombinator.impls
 
 import org.toptobes.parsercombinator.*
 
-class repeatedly<T, R>(
-    val parser: Parser<T, R>,
-    val requireMatch: Boolean = false
-) : Parser<T, List<R>>() {
-    override fun parse(oldState: ParseState<T, *>): ParseState<T, out List<R>> {
-        val results = mutableListOf<R>()
-        var nextState: ParseState<T, *> = oldState
+operator fun <R> Parser<R>.unaryPlus() =
+    repeatedly(this)
 
-        while (true) {
-            val testState = parser.parsePropagating(nextState)
+fun <R> repeatedly(parser: Parser<R>, requireMatch: Boolean = false) = Parser { oldState ->
+    val results = mutableListOf<R>()
+    var nextState: ParseState<*> = oldState
 
-            if (testState.isErrored) {
-                break
-            }
+    while (true) {
+        val testState = parser.parsePropagating(nextState)
 
-            nextState = testState
-            results += nextState.result!!
+        if (testState.isErrored) {
+            break
         }
 
-        if (requireMatch && results.isEmpty()) {
-            return errored(oldState, NoMatchError("repeatedly", oldState.index))
-        }
-
-        return success(nextState, results)
+        nextState = testState
+        results += nextState.result!!
     }
+
+    if (requireMatch && results.isEmpty()) {
+        return@Parser errored(oldState, NoMatchError("repeatedly", oldState.index))
+    }
+
+    return@Parser succeed(nextState, results)
 }
