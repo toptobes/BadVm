@@ -1,10 +1,10 @@
 @file:Suppress("IMPLICIT_NOTHING_TYPE_ARGUMENT_IN_RETURN_POSITION")
 
-package org.toptobes.lang2.parsers
+package org.toptobes.oldlang.parsers
 
 import org.toptobes.*
-import org.toptobes.lang2.nodes.*
-import org.toptobes.lang2.utils.Word
+import org.toptobes.oldlang.nodes.*
+import org.toptobes.oldlang.utils.Word
 import org.toptobes.parsercombinator.*
 import org.toptobes.parsercombinator.impls.*
 

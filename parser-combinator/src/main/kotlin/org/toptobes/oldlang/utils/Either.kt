@@ -1,4 +1,4 @@
-package org.toptobes.lang2.utils
+package org.toptobes.oldlang.utils
 
 sealed class Either<out L, out R> {
     data class Left <out L>(val value: L) : Either<L, Nothing>()

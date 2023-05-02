@@ -1,6 +1,6 @@
-package org.toptobes.lang2.nodes
+package org.toptobes.oldlang.nodes
 
-import org.toptobes.lang2.utils.Word
+import org.toptobes.oldlang.utils.Word
 
 interface Operand : Node {
     val operandAssociation: String

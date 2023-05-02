@@ -15,6 +15,6 @@ tasks.withType(KotlinCompile::class).all {
     kotlinOptions {
         jvmTarget = "11"
         freeCompilerArgs = listOf("-Xjvm-default=all", "-opt-in=kotlin.contracts.ExperimentalContracts")
-        exclude("**/org/toptobes/lang2/**")
+        exclude("**/org/toptobes/oldlang/**")
     }
 }

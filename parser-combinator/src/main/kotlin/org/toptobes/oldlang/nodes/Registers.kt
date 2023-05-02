@@ -1,7 +1,7 @@
-package org.toptobes.lang2.nodes
+package org.toptobes.oldlang.nodes
 
-import org.toptobes.lang2.mappings.reg16Codes
-import org.toptobes.lang2.mappings.reg8Codes
+import org.toptobes.oldlang.mappings.reg16Codes
+import org.toptobes.oldlang.mappings.reg8Codes
 
 interface Register : Operand {
     val code: Byte

@@ -1,12 +1,12 @@
 @file:Suppress("LocalVariableName")
 
-package org.toptobes.lang2.mappings
+package org.toptobes.oldlang.mappings
 
-import org.toptobes.lang2.nodes.Identifiables
-import org.toptobes.lang2.nodes.Instruction
-import org.toptobes.lang2.nodes.Node
-import org.toptobes.lang2.nodes.Operand
-import org.toptobes.lang2.parsers.operandParserMap
+import org.toptobes.oldlang.nodes.Identifiables
+import org.toptobes.oldlang.nodes.Instruction
+import org.toptobes.oldlang.nodes.Node
+import org.toptobes.oldlang.nodes.Operand
+import org.toptobes.oldlang.parsers.operandParserMap
 import org.toptobes.parsercombinator.contextual
 import org.toptobes.parsercombinator.impls.any
 import org.toptobes.parsercombinator.impls.str

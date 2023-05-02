@@ -1,6 +1,6 @@
-package org.toptobes.lang2.parsers
+package org.toptobes.oldlang.parsers
 
-import org.toptobes.lang2.nodes.LabelDefinition
+import org.toptobes.oldlang.nodes.LabelDefinition
 import org.toptobes.parsercombinator.impls.str
 import org.toptobes.parsercombinator.impls.strOf
 

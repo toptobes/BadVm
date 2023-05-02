@@ -1,4 +1,4 @@
-package org.toptobes.lang2.nodes
+package org.toptobes.oldlang.nodes
 
 sealed interface AllocationType
 object Allocated : AllocationType

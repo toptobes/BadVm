@@ -1,11 +1,11 @@
 @file:Suppress("ClassName", "PrivatePropertyName", "LocalVariableName")
 
-package org.toptobes.lang2.parsers
+package org.toptobes.oldlang.parsers
 
-import org.toptobes.lang2.mappings.instructionParsers
-import org.toptobes.lang2.nodes.Identifiables
-import org.toptobes.lang2.nodes.Instruction
-import org.toptobes.lang2.utils.StatefulParsingException
+import org.toptobes.oldlang.mappings.instructionParsers
+import org.toptobes.oldlang.nodes.Identifiables
+import org.toptobes.oldlang.nodes.Instruction
+import org.toptobes.oldlang.utils.StatefulParsingException
 import org.toptobes.parsercombinator.*
 
 class instructionParser(val vars: Identifiables) : Parser<String, Instruction>() {

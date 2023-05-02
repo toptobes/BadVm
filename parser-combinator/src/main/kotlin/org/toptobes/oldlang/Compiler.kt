@@ -1,9 +1,9 @@
-package org.toptobes.lang2
+package org.toptobes.oldlang
 
 import org.toptobes.parsercombinator.DescriptiveParsingException
-import org.toptobes.lang2.utils.Either
+import org.toptobes.oldlang.utils.Either
 import org.toptobes.parsercombinator.ParsingException
-import org.toptobes.lang2.utils.ifRight
+import org.toptobes.oldlang.utils.ifRight
 
 fun compile(code: String): Either<String, List<Byte>> {
     try {

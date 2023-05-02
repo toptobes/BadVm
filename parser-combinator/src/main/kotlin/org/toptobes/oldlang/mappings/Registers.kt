@@ -1,4 +1,4 @@
-package org.toptobes.lang2.mappings
+package org.toptobes.oldlang.mappings
 
 val reg16Codes = "sp, bp, ax, bx, cx, dx"
     .split(", ")

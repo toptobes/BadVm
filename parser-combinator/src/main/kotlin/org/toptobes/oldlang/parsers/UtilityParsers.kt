@@ -1,9 +1,9 @@
 @file:Suppress("LocalVariableName")
 
-package org.toptobes.lang2.parsers
+package org.toptobes.oldlang.parsers
 
-import org.toptobes.lang2.nodes.*
-import org.toptobes.lang2.utils.UWord
+import org.toptobes.oldlang.nodes.*
+import org.toptobes.oldlang.utils.UWord
 import org.toptobes.parsercombinator.impls.*
 import org.toptobes.parsercombinator.rangeTo
 import org.toptobes.parsercombinator.unaryMinus

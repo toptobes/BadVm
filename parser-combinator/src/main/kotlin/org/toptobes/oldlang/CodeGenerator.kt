@@ -1,6 +1,6 @@
-package org.toptobes.lang2
+package org.toptobes.oldlang
 
-import org.toptobes.lang2.nodes.Node
+import org.toptobes.oldlang.nodes.Node
 
 fun encodeIr(ir: List<Node>): List<Byte> {
     val identifiers = mutableMapOf<String, Short>()

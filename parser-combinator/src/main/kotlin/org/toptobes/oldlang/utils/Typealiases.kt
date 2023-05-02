@@ -1,4 +1,4 @@
-package org.toptobes.lang2.utils
+package org.toptobes.oldlang.utils
 
 typealias Word = Short
 typealias UWord = UShort
