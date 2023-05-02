@@ -2,6 +2,7 @@
 
 package org.toptobes.lang.parsing
 
+import org.toptobes.lang.ast.AstNode
 import org.toptobes.lang.ast.Instruction
 import org.toptobes.lang.ast.Operand
 import org.toptobes.parsercombinator.Parser
