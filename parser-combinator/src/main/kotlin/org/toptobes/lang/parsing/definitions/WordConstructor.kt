@@ -3,8 +3,7 @@
 package org.toptobes.lang.parsing.definitions
 
 import org.toptobes.lang.ast.*
-import org.toptobes.lang.parsing.cStyleArrayOf
-import org.toptobes.lang.parsing.word
+import org.toptobes.lang.parsing.*
 import org.toptobes.lang.utils.Word
 import org.toptobes.lang.utils.toBytes
 import org.toptobes.lang.utils.toWord
@@ -18,20 +17,36 @@ fun wordConstructor(name: String, allocType: AllocationType) = lazy {
 
 private fun singleWord(name: String, allocType: AllocationType) = contextual {
     val word = ctx.parse(word) orFail "Not a single word"
+    val bytes = word.toBytes()
 
-    val bytes = listOf(word).flatMap(Word::toBytes)
-    succeed(listOf(VarDefinition(name, bytes, allocType, OperandType<Imm16>())))
+    val definition = when (allocType) {
+        Allocated -> {
+            val handle = ctx allocBytes bytes
+            Variable(name, PromisedBytes(handle) { WordPtrInterpretation })
+        }
+        Immediate -> {
+            Constant(name, ImmediateBytes(bytes) { WordInterpretation })
+        }
+    }
+
+    succeed(definition)
 }
 
 private fun wordArray(name: String, allocType: AllocationType) = contextual {
-    ctx.parse(wordArrayBuilder) {
-        val bytes = it.flatMap(Word::toBytes)
-        succeed(listOf(VarDefinition(name, bytes, allocType, Words)))
+    val words = ctx parse any(wordArrayBuilder, literalWordArray, string) orFail "Not a word array"
+    val bytes = words.flatMap(Word::toBytes)
+
+    val definition = when (allocType) {
+        Allocated -> {
+            val handle = ctx allocBytes bytes
+            Variable(name, PromisedBytes(handle) { WordPtrInterpretation })
+        }
+        Immediate -> {
+            Constant(name, ImmediateBytes(bytes) { WordArrayInterpretation(bytes.size.toWord()) })
+        }
     }
 
-    val words = ctx parse any(literalWordArray, string) orFail "Not a word array"
-    val bytes = words.flatMap(Word::toBytes)
-    succeed(listOf(VarDefinition(name, bytes, allocType, Words)))
+    succeed(definition)
 }
 
 private val literalWordArray = cStyleArrayOf(any(

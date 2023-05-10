@@ -17,7 +17,7 @@ val variableDefinition = contextual {
 
     ctx parse -str("=") orCrash "Missing ="
 
-    val varDef = ctx parse when (type) {
+    val (definition, interpretation) = ctx parse when (type) {
         "byte", "db" -> byteConstructor(name, allocType)
         "word", "dw" -> wordConstructor(name, allocType)
         else -> typeConstructor(name, allocType)
@@ -28,20 +28,22 @@ val variableDefinition = contextual {
 }
 
 private val modifiers = contextual {
-    val modifiers = ctx parse pool(-str("alloc"), -str("embed"), -str("imm"), -str("export")) orCrash "Error parsing variable keywords"
-    val isAllocated = "alloc" in modifiers || modifiers.isEmpty()
+    val modifiers = ctx parse pool(-str("alloc"), -str("imm"), -str("export")) orCrash "Error parsing variable keywords"
     val isEmbedded  = "embed" in modifiers
-    val isImmediate = "imm"   in modifiers
+    val isAllocated = "alloc" in modifiers || !isEmbedded
 
-    if ((isAllocated == isEmbedded) && (isAllocated xor isEmbedded xor isImmediate)) {
+    if (isAllocated && isEmbedded) {
         crash("Conflicting allocation type keywords")
     }
 
     val allocType = when {
-        isEmbedded -> Embedded
-        isImmediate -> Immediate
+        isEmbedded -> Immediate
         else -> Allocated
     }
 
     succeed(allocType)
 }
+
+sealed interface AllocationType
+object Allocated : AllocationType
+object Immediate : AllocationType

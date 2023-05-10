@@ -1,8 +1,6 @@
 package org.toptobes.parsercombinator
 
-import org.toptobes.lang.ast.TypeDefinition
-import org.toptobes.lang.ast.VarDefinition
-import org.toptobes.lang.ast.plus
+import org.toptobes.lang.ast.*
 
 class Context(initialState: OkayParseState<*>) {
     var state: OkayParseState<*> = initialState
@@ -38,12 +36,22 @@ class Context(initialState: OkayParseState<*>) {
         return parse(parser) != null
     }
 
-    infix fun addVar(def: VarDefinition) {
-        state = state.copy(vars = state.vars + def)
+    infix fun addVar(def: Definition<*>) {
+        state = state.copy(vars = state.vars + (def.name to def))
     }
 
-    infix fun addType(def: TypeDefinition) {
-        state = state.copy(types = state.types + def)
+    infix fun addType(def: TypeInterpretation) {
+        state = state.copy(types = state.types + (def.name to def))
+    }
+
+    fun assume(name: String, interpretation: Interpretation) {
+        state = state.copy(assumptions = state.assumptions + (name to interpretation))
+    }
+
+    infix fun allocBytes(bytes: List<Byte>): () -> List<Byte> {
+        val toAlloc = BytesToAllocate(bytes)
+        state = state.copy(allocQueue = state.allocQueue + toAlloc)
+        return { toAlloc.bytes  }
     }
 }
 

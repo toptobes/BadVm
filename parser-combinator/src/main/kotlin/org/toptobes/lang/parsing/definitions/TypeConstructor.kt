@@ -1,6 +1,7 @@
 package org.toptobes.lang.parsing.definitions
 
 import org.toptobes.lang.ast.*
+import org.toptobes.lang.parsing.AllocationType
 import org.toptobes.lang.parsing.identifier
 import org.toptobes.parsercombinator.*
 import org.toptobes.parsercombinator.impls.any
@@ -26,11 +27,11 @@ private fun typeConstructor(typeName: String, name: String, allocType: Allocatio
     succeed(vars)
 }
 
-private fun parseConstructorArgs(type: TypeDefinition, name: String, allocType: AllocationType) = contextual {
+private fun parseConstructorArgs(type: TypeInterpretation, name: String, allocType: AllocationType) = contextual {
     type.ensureIsConcrete()
 
-    val values = mutableListOf<VarDefinition>()
-    val fields = type.fields.toMutableList()
+    val values = mutableListOf<Definition<*>>()
+    val fields = type.offsets.values.toMutableList()
 
     val isNamedCheck = -!identifier then -str(":")
     val isNamedConstructor = ctx canPeek isNamedCheck
@@ -42,10 +43,11 @@ private fun parseConstructorArgs(type: TypeDefinition, name: String, allocType: 
             ctx parse nextUnnamedTypeConstructorField(fields) orCrash "Error parsing (unnamed) field in ${type.name} constructor"
         }
 
-        values += when (nextField) {
-            is ByteField -> byteField(nextField, name, allocType)
-            is WordField -> wordField(nextField, name, allocType)
-            is NestedTypeField -> nestedTypeField(nextField, name, allocType)
+        values += when (nextField.interpretation) {
+            is ByteInterpretation -> byteField(nextField, name, allocType)
+            is WordInterpretation -> wordField(nextField, name, allocType)
+            is TypeInterpretation -> nestedTypeField(nextField, name, allocType)
+            else -> TODO()
         }
 
         if (fields.isNotEmpty()) {
@@ -58,15 +60,15 @@ private fun parseConstructorArgs(type: TypeDefinition, name: String, allocType: 
     succeed(values)
 }
 
-private fun ContextScope<*>.byteField(field: ByteField, name: String, allocType: AllocationType): List<VarDefinition> {
+private fun ContextScope<*>.byteField(field: Field, name: String, allocType: AllocationType): List<Byte> {
     return ctx parse -byteConstructor(name + field.name, allocType) orCrash "Error parsing byte constructor"
 }
 
-private fun ContextScope<*>.wordField(field: WordField, name: String, allocType: AllocationType): List<VarDefinition> {
+private fun ContextScope<*>.wordField(field: Field, name: String, allocType: AllocationType): List<Byte> {
     return ctx parse -wordConstructor(name + field.name, allocType) orCrash "Error parsing word constructor"
 }
 
-private fun ContextScope<*>.nestedTypeField(field: NestedTypeField, name: String, allocType: AllocationType): List<VarDefinition> {
+private fun ContextScope<*>.nestedTypeField(field: Field, name: String, allocType: AllocationType): List<Byte> {
     ctx parse -str(field.type) orCrash "Error parsing constructor name for ${field.type}"
     return ctx parse -typeConstructor(field.type, name + field.name, allocType) orCrash "Error parsing constructor for ${field.type}"
 }

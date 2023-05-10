@@ -5,9 +5,7 @@ import org.toptobes.lang.utils.reg16Codes
 import org.toptobes.lang.utils.reg8Codes
 import kotlin.properties.Delegates
 
-interface Argument : AstNode {
-
-}
+interface Argument : AstNode
 
 interface Operand : Argument {
     val operandAssociation: String
@@ -57,4 +55,3 @@ data class Pointer(val regName: String) : RegisterOperand {
 private fun throwInvalidRegister(regName: String): Nothing {
     throw IllegalArgumentException("Invalid register $regName")
 }
-

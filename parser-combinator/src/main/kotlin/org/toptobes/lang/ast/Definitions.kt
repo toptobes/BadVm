@@ -1,37 +1,73 @@
 package org.toptobes.lang.ast
 
 import org.toptobes.lang.utils.Word
+import org.toptobes.lang.utils.toWord
+import org.toptobes.parsercombinator.ParsingException
 import kotlin.properties.Delegates
 
-sealed interface Bytes {
-    val bytes: List<Bytes>
+interface Definition<T : Bytes> {
+    val name: String
 }
 
-data class ImmediateBytes(override val bytes: List<Bytes>) : Bytes
+data class Constant(override val name: String, val bytes: ImmediateBytes) : Definition<ImmediateBytes>
 
-data class AllocatedBytes(override val bytes: List<Bytes>) : Bytes {
+data class Variable(override val name: String, val bytes: PromisedBytes) : Definition<PromisedBytes>
+
+sealed interface Bytes : AstNode {
+    val bytes: List<Byte>
+    val interpretation: (String) -> Interpretation
+}
+
+data class ImmediateBytes(
+    override val bytes: List<Byte>,
+    override val interpretation: (String) -> Interpretation
+) : Bytes
+
+class PromisedBytes(
+    val bytesSupplier: () -> List<Byte>,
+    override val interpretation: (String) -> Interpretation
+) : Bytes {
+    override val bytes: List<Byte>
+        get() = bytesSupplier()
+}
+
+data class BytesToAllocate(val bytes: List<Byte>) {
     var address by Delegates.notNull<Word>()
 }
 
 interface Interpretation {
-    val size: Int
+    val size: Word
 }
 
-object Word : Interpretation {
-    override val size = 2
+object WordInterpretation : Interpretation {
+    override val size: Word = 2
 }
 
-object Byte : Interpretation {
-    override val size = 1
+object ByteInterpretation : Interpretation {
+    override val size: Word = 1
 }
+
+object WordPtrInterpretation : Interpretation {
+    override val size: Word = 2
+}
+
+object BytePtrInterpretation : Interpretation {
+    override val size: Word = 1
+}
+
+class WordArrayInterpretation(override val size: Word) : Interpretation
+
+class ByteArrayInterpretation(override val size: Word) : Interpretation
 
 data class Field(val name: String, val offset: Int, val interpretation: Interpretation)
 
-data class Type(val offsets: Map<String, Field>) : Interpretation {
-    override val size = offsets.values.sumOf { it.offset }
-}
+data class TypeInterpretation(val name: String, val offsets: Map<Word, Field>) : Interpretation {
+    override val size = offsets.values.sumOf { it.offset }.toWord()
 
-val assumptions = mutableMapOf<String, Interpretation>()
+    fun ensureIsConcrete() {
+        if (offsets.isEmpty()) throw ParsingException("$name is a declared type, expected defined")
+    }
+}
 
 //data class VarDefinition(
 //    val name: String,
