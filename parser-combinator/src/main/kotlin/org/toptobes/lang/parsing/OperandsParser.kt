@@ -3,7 +3,6 @@ package org.toptobes.lang.parsing
 import org.toptobes.lang.ast.*
 import org.toptobes.lang.utils.reg16Codes
 import org.toptobes.lang.utils.reg8Codes
-import org.toptobes.parsercombinator.Parser
 import org.toptobes.parsercombinator.impls.any
 import org.toptobes.parsercombinator.impls.betweenSquareBrackets
 import org.toptobes.parsercombinator.impls.str

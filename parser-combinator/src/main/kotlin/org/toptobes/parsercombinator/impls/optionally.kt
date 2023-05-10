@@ -11,5 +11,5 @@ infix fun <R> Parser<R>.withDefault(default: R) = Parser { oldState ->
 
     val result = if (newState.isOkay()) newState.result else default
     val index  = if (newState.isOkay()) newState.index  else oldState.index
-    success(newState, result, index)
+    success(newState, result, oldState.types, oldState.vars, index)
 }

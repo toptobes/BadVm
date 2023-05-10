@@ -21,5 +21,5 @@ fun regex(pattern: Regex, matchIndex: Int = 0) = Parser { oldState ->
         return@Parser errored(oldState, "regex: Couldn't match given pattern ${pattern.pattern}")
     }
 
-    return@Parser success(oldState, match.groupValues[matchIndex], oldState.index + match.value.length)
+    return@Parser success(oldState, match.groupValues[matchIndex], index = oldState.index + match.value.length)
 }

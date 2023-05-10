@@ -15,5 +15,5 @@ val digits = Parser { oldState ->
         return@Parser errored(oldState, "digits: Could not match a digit")
     }
 
-    return@Parser success(oldState, digits, oldState.index + digits.length)
+    return@Parser success(oldState, digits, index = oldState.index + digits.length)
 }

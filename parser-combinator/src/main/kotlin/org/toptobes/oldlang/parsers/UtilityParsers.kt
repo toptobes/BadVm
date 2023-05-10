@@ -32,12 +32,12 @@ private val number = any(
 )
 
 val word = number
-    .chain {
+    .flatMap {
         if (it > UWord.MAX_VALUE.toInt()) crash("$it is not imm16") else succeed(it.toShort())
     }
 
 val byte = number
-    .chain {
+    .flatMap {
         if (it > UByte.MAX_VALUE.toInt()) crash("$it is not imm8") else succeed(it.toByte())
     }
 

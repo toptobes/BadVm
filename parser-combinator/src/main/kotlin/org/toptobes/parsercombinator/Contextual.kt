@@ -1,14 +1,13 @@
 package org.toptobes.parsercombinator
 
-class Context(initialState: ParseState<*>) {
-    var state: ParseState<*> = initialState
-        private set
+import org.toptobes.lang.ast.TypeDefinition
+import org.toptobes.lang.ast.VarDefinition
+import org.toptobes.lang.ast.plus
 
-    infix fun <R> parse(parser: Parser<R>): R? {
-        val nextState = parser.parsePropagating(state)
-        state = nextState
-        return if (nextState.isOkay()) nextState.result else null
-    }
+class Context(initialState: OkayParseState<*>) {
+    var state: OkayParseState<*> = initialState
+
+    var errorStr: String? = null
 
     infix fun <R> peek(parser: Parser<R>): R? {
         val nextState = parser.parsePropagating(state)
@@ -19,22 +18,32 @@ class Context(initialState: ParseState<*>) {
         return peek(parser) != null
     }
 
-    infix fun <R> tryParse(parser: Parser<R>): R? {
+    infix fun <R> parse(parser: Parser<R>): R? {
         val nextState = parser.parsePropagating(state)
 
         if (nextState.isOkay()) {
             state = nextState
             return nextState.result
         }
+
+        errorStr = nextState.error
         return null
     }
 
-    inline fun <R, R2> tryParse(parser: Parser<R>, block: (R) -> R2): R2? {
-        return tryParse(parser)?.let(block)
+    inline fun <R, R2> parse(parser: Parser<R>, block: (R) -> R2): R2? {
+        return parse(parser)?.let(block)
     }
 
-    infix fun <R> canTryParse(parser: Parser<R>): Boolean {
-        return tryParse(parser) != null
+    infix fun <R> canParse(parser: Parser<R>): Boolean {
+        return parse(parser) != null
+    }
+
+    infix fun addVar(def: VarDefinition) {
+        state = state.copy(vars = state.vars + def)
+    }
+
+    infix fun addType(def: TypeDefinition) {
+        state = state.copy(types = state.types + def)
     }
 }
 
@@ -64,12 +73,17 @@ class ContextScope<R>(val ctx: Context) {
     }
 }
 
+@Suppress("UNCHECKED_CAST")
 fun <R> contextual(fn: ContextScope<R>.(Context) -> Nothing) = Parser { oldState ->
     val context = Context(oldState)
 
     try {
         ContextScope<R>(context).fn(context)
     } catch (e: ContextualParseSuccess) {
+        if (context.state.isErrored()) {
+            throw IllegalStateException("ContextualParseSuccess yet context is errored")
+        }
+
         success(context.state, e.result as R)
     } catch (e: ContextualParseError) {
         errored(context.state, e.errorMsg)

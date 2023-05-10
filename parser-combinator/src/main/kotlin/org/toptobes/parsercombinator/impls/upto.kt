@@ -10,7 +10,7 @@ fun <R> upto(
     requireMatch: Boolean = false
 ) = Parser { oldState ->
     val results = mutableListOf<R>()
-    var nextState: ParseState<*> = oldState
+    var nextState = oldState
 
     for (i in 0 until max) {
         val testState = parser.parsePropagating(nextState)

@@ -2,6 +2,7 @@ package org.toptobes.lang.parsing
 
 import org.toptobes.lang.utils.UWord
 import org.toptobes.lang.utils.Word
+import org.toptobes.lang.utils.toWord
 import org.toptobes.parsercombinator.*
 import org.toptobes.parsercombinator.impls.*
 
@@ -35,11 +36,19 @@ private val number = (signMulti then any(
 ))..{ it[0] * it[1] }
 
 val word = number
-    .chain {
-        if (it.toUInt() <= UWord.MAX_VALUE) succeed(it.toShort()) else fail("number > uword.max_value")
-    }
+    .flatMap { when {
+        it in Word.MIN_VALUE..0 -> succeed(it.toWord())
+        it.toUInt() in 0u..UWord.MAX_VALUE.toUInt() -> succeed(it.toWord())
+        else -> fail("word '$number' !in word.min..uword.max")
+    }}
 
 val byte = number
-    .chain {
-        if (it.toUInt() <= UByte.MAX_VALUE) succeed(it.toByte()) else fail("number > ubyte.max_value")
-    }
+    .flatMap { when {
+        it in Byte.MIN_VALUE..0 -> succeed(it.toByte())
+        it.toUInt() in 0u..UByte.MAX_VALUE.toUInt() -> succeed(it.toByte())
+        else -> fail("byte '$number' !in byte.min..ubyte.max")
+    }}
+
+fun <R> cStyleArrayOf(parser: Parser<R>): Parser<List<R>> {
+    return betweenCurlyBrackets(sepByCommas(parser))
+}

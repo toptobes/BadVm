@@ -17,7 +17,7 @@ fun <R> sepBy(
     lateinit var prevNextContentState: ParseState<*>
     lateinit var nextContentState: ParseState<*>
 
-    lateinit var lastOkayState: ParseState<*>
+    lateinit var lastOkayState: OkayParseState<*>
 
     while (true) {
         if (nextSeparatorState != oldState) {
@@ -27,7 +27,7 @@ fun <R> sepBy(
         nextContentState = content.parsePropagating(nextSeparatorState)
 
         if (nextContentState.isErrored()) {
-            lastOkayState = nextSeparatorState
+            lastOkayState = nextSeparatorState as OkayParseState
 
             if (!allowTrailingSep && nextSeparatorState != oldState) {
                 return@Parser errored(prevNextContentState, "sepBy: Illegal trailing comma")

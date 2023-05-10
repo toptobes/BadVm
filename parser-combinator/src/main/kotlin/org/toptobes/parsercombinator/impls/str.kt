@@ -20,5 +20,5 @@ fun str(pattern: String) = Parser { oldState ->
     }
 
     val newIndex = oldState.index + pattern.length
-    return@Parser success(oldState, pattern, newIndex)
+    return@Parser success(oldState, pattern, index = newIndex)
 }

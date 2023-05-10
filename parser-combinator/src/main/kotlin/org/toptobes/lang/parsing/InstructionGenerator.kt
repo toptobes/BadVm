@@ -2,14 +2,11 @@
 
 package org.toptobes.lang.parsing
 
-import org.toptobes.lang.ast.AstNode
 import org.toptobes.lang.ast.Instruction
 import org.toptobes.lang.ast.Operand
-import org.toptobes.parsercombinator.Parser
-import org.toptobes.parsercombinator.contextual
+import org.toptobes.parsercombinator.*
 import org.toptobes.parsercombinator.impls.any
 import org.toptobes.parsercombinator.impls.str
-import org.toptobes.parsercombinator.unaryMinus
 import java.io.File
 
 data class InstructionMetadata(
@@ -46,7 +43,7 @@ val instructions = File("../opcodes")
         val mnemonic = nameAndArgs.first().uppercase()
 
         val args = nameAndArgs.drop(1).reversed().toTypedArray()
-        val parser = createInstructionParser(nameAndArgs.first(), *args)
+        val parser = createSingleInstructionParser(nameAndArgs.first(), *args)
 
         val size = 1 + args.fold(0) { size, arg -> size + argSizes[arg.uppercase()]!! }
 
@@ -60,7 +57,7 @@ val instructionParsers = instructions
         any(*list.map { it.parser }.toTypedArray())
     }
 
-private fun createInstructionParser(name: String, vararg args: String) = contextual { ctx ->
+private fun createSingleInstructionParser(name: String, vararg args: String) = contextual {
     (ctx parse -str(name)) ?: crash("Not an instruction")
 
     val parsedArgs = args.foldIndexed(emptyList<Operand>()) { idx, acc, arg ->
@@ -77,3 +74,19 @@ private fun createInstructionParser(name: String, vararg args: String) = context
 
     succeed(Instruction(name, parsedArgs))
 }
+
+val instructionsParser = Parser { oldState ->
+    val line = oldState.subtarget().substringBefore("\r\n").substringBefore("\n")
+    val name = line.substringBefore(" ")
+
+    val parser = instructionParsers[name] ?: return@Parser errored(oldState, "Instruction '$name' not found")
+
+    val parsedState = parser.parsePropagating(oldState)
+
+    if (parsedState.isErrored()) {
+        throw DescriptiveParsingException("Bad args or format for line '$line'", parsedState)
+    }
+
+    return@Parser success(parsedState)
+}
+

@@ -1,6 +1,6 @@
 package org.toptobes.parsercombinator
 
-class Parser<out R>(val parse: (ParseState<*>) -> ParseState<R>) {
+class Parser<out R>(val parse: (OkayParseState<*>) -> ParseState<R>) {
     fun parsePropagating(oldState: ParseState<*>): ParseState<R> {
         if (oldState.isErrored()) {
             return oldState
@@ -13,9 +13,9 @@ class Parser<out R>(val parse: (ParseState<*>) -> ParseState<R>) {
         return parsePropagating(UnitParseState<R>(target))
     }
 
-    fun log(target: String, logFn: (Any?) -> Unit = ::println): ParseState<R> {
+    fun log(target: String, logFn: (Any) -> Unit = ::println): ParseState<R> {
         return invoke(target).also {
-            if (it.isErrored()) logFn(it.error) else logFn(it.result)
+            if (it.isErrored()) logFn(it.error) else logFn(it)
         }
     }
 
@@ -29,7 +29,7 @@ class Parser<out R>(val parse: (ParseState<*>) -> ParseState<R>) {
         return@Parser success(nextState, mapper(nextState.result))
     }
 
-    fun <R2> chain(generator: (R) -> Parser<R2>) = Parser { oldState ->
+    fun <R2> flatMap(generator: (R) -> Parser<R2>) = Parser { oldState ->
         val nextState = parsePropagating(oldState)
 
         if (nextState.isErrored()) {

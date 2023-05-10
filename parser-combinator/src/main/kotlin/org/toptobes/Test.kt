@@ -1,14 +1,21 @@
 package org.toptobes
 
-import org.toptobes.lang.parsing.typeDefinition
+import org.toptobes.lang.parsing.codeParser
 import org.toptobes.parsercombinator.DescriptiveParsingException
 
 fun main() {
     try {
-        typeDefinition.log("""
-            type Hi = Hi 
-              & Hi
-              | Hi hi
+        codeParser.log("""
+            intrp Hi = 
+              | byte b
+            
+            intrp Hi2 = Hi
+              | Hi h1
+              | byte b2
+            
+            byte x = [21, ?]
+            
+            Hi2 hi = Hi2 { 1, Hi { 1 }, 2 }
         """.trimIndent())
     } catch (e: DescriptiveParsingException) {
         println(e.message)

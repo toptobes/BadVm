@@ -15,7 +15,7 @@ val whitespace = Parser { oldState ->
         return@Parser errored(oldState, "whitespace: Could not match whitespace")
     }
 
-    return@Parser success(oldState, whitespace, oldState.index + whitespace.length)
+    return@Parser success(oldState, whitespace, index = oldState.index + whitespace.length)
 }
 
 val optionalWhitespace = -whitespace

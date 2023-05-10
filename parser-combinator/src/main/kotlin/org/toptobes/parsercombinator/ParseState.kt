@@ -1,5 +1,7 @@
 package org.toptobes.parsercombinator
 
+import org.toptobes.lang.ast.Types
+import org.toptobes.lang.ast.Vars
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 
@@ -10,15 +12,33 @@ sealed class ParseState<out R> {
 
 data class OkayParseState<out R>(
     val result: R,
+    val types: Types,
+    val vars: Vars,
     override val target: String,
     override val index: Int,
-) : ParseState<R>()
+) : ParseState<R>() {
+    override fun toString() = """
+        {
+            "result": $result,
+            "types": $types,
+            "vars": $vars
+            "index": $index
+        }
+    """.trimIndent()
+}
 
 data class ErroredParseState(
     val error: String,
     override val target: String,
     override val index: Int,
-) : ParseState<Nothing>()
+) : ParseState<Nothing>() {
+    override fun toString() = """
+        {
+            "error": $error,
+            "index": $index
+        }
+    """.trimIndent()
+}
 
 @ExperimentalContracts
 fun <R> ParseState<R>.isOkay(): Boolean {
@@ -38,9 +58,13 @@ fun <R> ParseState<R>.isErrored(): Boolean {
     return this is ErroredParseState
 }
 
-@Suppress("FunctionName")
+inline fun <R, R2> ParseState<R>.ifOkay(block: OkayParseState<R>.() -> R2): R2? {
+    return if (this.isOkay()) block(this) else null
+}
+
+@Suppress("FunctionName", "UNCHECKED_CAST")
 fun <R> UnitParseState(target: String): OkayParseState<R> {
-    return OkayParseState(null as R, target, 0)
+    return OkayParseState(null as R, emptyMap(), emptyMap(), target, 0)
 }
 
 fun <R> errored(state: ParseState<*>, error: String): ParseState<R> {
@@ -51,8 +75,24 @@ fun <R> errored(state: ErroredParseState, error: String = state.error): ParseSta
     return ErroredParseState(error, state.target, state.index)
 }
 
-fun <R> success(state: ParseState<*>, result: R, index: Int = state.index): ParseState<R> {
-    return OkayParseState(result, state.target, index)
+fun <R> success(
+    state: ParseState<*>,
+    result: R,
+    types: Types,
+    vars: Vars,
+    index: Int = state.index
+): ParseState<R> {
+    return OkayParseState(result, types, vars, state.target, index)
+}
+
+fun <R> success(
+    state: OkayParseState<*>,
+    result: R,
+    types: Types = state.types,
+    vars: Vars = state.vars,
+    index: Int = state.index
+): ParseState<R> {
+    return OkayParseState(result, types, vars, state.target, index)
 }
 
 fun <R> success(state: OkayParseState<R>): ParseState<R> {

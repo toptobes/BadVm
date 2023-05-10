@@ -6,5 +6,5 @@ val char = Parser { oldState ->
     val char = oldState.target.getOrNull(oldState.index)
         ?: return@Parser errored(oldState, "char: EOF reading char")
 
-    return@Parser success(oldState, char, oldState.index + 1)
+    return@Parser success(oldState, char, index = oldState.index + 1)
 }

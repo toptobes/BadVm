@@ -15,5 +15,5 @@ val letters = Parser { oldState ->
         return@Parser errored(oldState, "letters: Could not match a letter")
     }
 
-    return@Parser success(oldState, letters, oldState.index + letters.length)
+    return@Parser success(oldState, letters, index = oldState.index + letters.length)
 }

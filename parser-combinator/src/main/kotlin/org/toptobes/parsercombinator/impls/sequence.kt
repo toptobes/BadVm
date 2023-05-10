@@ -12,17 +12,19 @@ fun <R> sequence(
     var nextState = oldState
 
     for ((index, parser) in parsers.withIndex()) {
-        nextState = parser.parsePropagating(nextState)
+        val testState = parser.parsePropagating(nextState)
 
         when (onError) {
             CompletelyError -> {
-                if (nextState.isErrored()) {
-                    return@Parser errored(oldState, "sequence: Errored state for parser #$index (${nextState.error})")
+                if (testState.isErrored()) {
+                    return@Parser errored(oldState, "sequence: Errored state for parser #$index (${testState.error})")
                 }
+                nextState = testState
                 results += nextState.result
             }
             IgnoreErrors -> {
-                if (nextState.isOkay()) {
+                if (testState.isOkay()) {
+                    nextState = testState
                     results += nextState.result
                 }
             }

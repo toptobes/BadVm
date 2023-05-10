@@ -3,8 +3,13 @@ package org.toptobes.lang.ast
 import org.toptobes.lang.utils.Word
 import org.toptobes.lang.utils.reg16Codes
 import org.toptobes.lang.utils.reg8Codes
+import kotlin.properties.Delegates
 
-interface Operand : AstNode {
+interface Argument : AstNode {
+
+}
+
+interface Operand : Argument {
     val operandAssociation: String
 }
 
@@ -18,11 +23,13 @@ data class Imm8 (val value: Byte) : Operand {
     override val operandAssociation get() = "IMM8"
 }
 
-data class Mem16(val address: Word) : Operand {
+data class Mem16(val words: List<Word>) : Operand {
+    var address by Delegates.notNull<Word>()
     override val operandAssociation get() = "MEM16"
 }
 
-data class Mem8 (val address: Word) : Operand {
+data class Mem8 (val bytes: List<Byte>) : Operand {
+    var address by Delegates.notNull<Word>()
     override val operandAssociation get() = "MEM8"
 }
 

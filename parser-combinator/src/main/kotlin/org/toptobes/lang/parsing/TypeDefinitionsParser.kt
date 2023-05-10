@@ -3,43 +3,47 @@ package org.toptobes.lang.parsing
 import org.toptobes.lang.ast.*
 import org.toptobes.parsercombinator.contextual
 import org.toptobes.parsercombinator.impls.any
-import org.toptobes.parsercombinator.impls.char
 import org.toptobes.parsercombinator.impls.str
 import org.toptobes.parsercombinator.impls.lazy
 import org.toptobes.parsercombinator.unaryMinus
 
 val typeDefinition = lazy { any(declaredType, definedType) }
 
-private val declaredType = contextual { ctx ->
+private val declaredType = contextual {
     ctx parse -str("declare") orFail "Not a type declaration"
     ctx parse -str("type") orCrash "declare keyword without 'type' after it"
 
     val name = ctx parse -identifier orCrash "Error parsing declared type's identifier"
-    succeed(TypeDeclaration(name))
+
+    ctx addType DeclaredTypeDefinition(name)
+    succeed(DeleteThisNode)
 }
 
-private val definedType = contextual { ctx ->
+private val definedType = contextual {
     ctx parse -str("type") orFail  "Not a type definition"
 
     val name = ctx parse -identifier orCrash "Error parsing declared type's identifier"
+
+    ctx addType DeclaredTypeDefinition(name)
 
     ctx parse -str("=")
 
     val fields = ctx parse fieldsParser orCrash "Error parsing declared type's fields"
 
-    succeed(TypeDefinition(name, fields))
+    ctx addType ConcreteTypeDefinition(name, fields)
+    succeed(DeleteThisNode)
 }
 
-private val fieldsParser = contextual { ctx ->
+private val fieldsParser = contextual {
     val fields = mutableListOf<Field>()
     var firstMatch = true
 
     while (true) {
         fields += when {
-            ctx canTryParse str("|") -> {
+            ctx canParse str("|") -> {
                 ctx parse normalField   orCrash "Error parsing normal type field"
             }
-            ctx canTryParse str("&") || firstMatch -> {
+            ctx canParse str("&") || firstMatch -> {
                 ctx parse embeddedField orCrash "Error parsing embedded type field"
             }
             else -> break
@@ -50,27 +54,32 @@ private val fieldsParser = contextual { ctx ->
     succeed(fields)
 }
 
-private val embeddedField = contextual { ctx ->
-    val type = ctx parse -identifier orCrash "Error parsing type for field"
+private val embeddedField = contextual {
+    val typeName = ctx parse -identifier orCrash "Error parsing type for field"
 
-    if (type in listOf("word", "dw")) {
+    if (typeName in listOf("word", "dw")) {
         crash("Can't embed a 'word' field")
     }
 
-    if (type in listOf("byte", "db")) {
+    if (typeName in listOf("byte", "db")) {
         crash("Can't embed a 'byte' field")
     }
 
-    succeed(EmbeddedTypeField(type))
+    val type = ctx.state.types[typeName] ?: crash("$typeName is not a tyoe")
+    type.ensureIsConcrete()
+
+    succeed(type.fields)
 }
 
 private val normalField = contextual {
     val type = ctx parse -identifier orCrash "Error parsing type for field"
     val name = ctx parse -identifier orCrash "Error parsing name for field"
 
-    succeed(when (type) {
+    val field = when (type) {
         "byte", "db" -> ByteField(name)
         "word", "dw" -> WordField(name)
         else -> NestedTypeField(name, type)
-    })
+    }
+
+    succeed(listOf(field))
 }
