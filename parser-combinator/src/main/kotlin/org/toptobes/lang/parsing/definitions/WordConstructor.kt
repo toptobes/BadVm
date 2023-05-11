@@ -1,13 +1,8 @@
-@file:Suppress("IMPLICIT_NOTHING_TYPE_ARGUMENT_IN_RETURN_POSITION")
-
 package org.toptobes.lang.parsing.definitions
 
 import org.toptobes.lang.ast.*
 import org.toptobes.lang.parsing.*
-import org.toptobes.lang.utils.Word
-import org.toptobes.lang.utils.toBytes
-import org.toptobes.lang.utils.toWord
-import org.toptobes.lang.utils.toWordOrNull
+import org.toptobes.lang.utils.*
 import org.toptobes.parsercombinator.*
 import org.toptobes.parsercombinator.impls.*
 
@@ -22,7 +17,7 @@ private fun singleWord(name: String, allocType: AllocationType) = contextual {
     val definition = when (allocType) {
         Allocated -> {
             val handle = ctx allocBytes bytes
-            Variable(name, PromisedBytes(handle) { WordPtrInterpretation })
+            Variable(name, PromisedBytes(handle) { Ptr<WordInterpretation>() })
         }
         Immediate -> {
             Constant(name, ImmediateBytes(bytes) { WordInterpretation })
@@ -34,15 +29,15 @@ private fun singleWord(name: String, allocType: AllocationType) = contextual {
 
 private fun wordArray(name: String, allocType: AllocationType) = contextual {
     val words = ctx parse any(wordArrayBuilder, literalWordArray, string) orFail "Not a word array"
-    val bytes = words.flatMap(Word::toBytes)
+    val bytes = words.toBytes()
 
     val definition = when (allocType) {
         Allocated -> {
             val handle = ctx allocBytes bytes
-            Variable(name, PromisedBytes(handle) { WordPtrInterpretation })
+            Variable(name, PromisedBytes(handle) { Ptr<WordInterpretation>() })
         }
         Immediate -> {
-            Constant(name, ImmediateBytes(bytes) { WordArrayInterpretation(bytes.size.toWord()) })
+            Constant(name, ImmediateBytes(bytes) { Vec<WordInterpretation>(bytes.size) })
         }
     }
 
@@ -50,8 +45,8 @@ private fun wordArray(name: String, allocType: AllocationType) = contextual {
 }
 
 private val literalWordArray = cStyleArrayOf(any(
-    word..(::listOf)
-))..{ it.flatten() }
+    word
+))..{ it.toWordArray() }
 
 private val wordArrayBuilder = contextual {
     val numBytes = word..(Word::toString)
@@ -66,11 +61,11 @@ private val wordArrayBuilder = contextual {
         else -> crash("Invalid initializer ($init) in word array builder")
     }
 
-    val words = List(n.toInt()) { initWord ?: it.toWord() }
+    val words = WordArray(n.toInt()) { initWord ?: it.toWord() }
     succeed(words)
 }
 
 private val string = betweenDoubleQuotes(until(char) { it.ifOkay { result == '"' } ?: false })
-    .map { it.map { chr -> chr.code.toWord() } }
+    .map { it.map { chr -> chr.code.toWord() }.toWordArray() }
 
 private fun String.isWord() = toWordOrNull() != null

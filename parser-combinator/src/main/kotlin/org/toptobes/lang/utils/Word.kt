@@ -3,23 +3,34 @@ package org.toptobes.lang.utils
 typealias Word = Short
 typealias UWord = UShort
 
-fun List<Byte>.toWord(): Short {
-    require(this.size == 2) { "List of bytes is not of size 2" }
+typealias WordArray = ShortArray
+
+fun wordArrayOf(vararg elements: Word) = shortArrayOf(*elements)
+
+fun Collection<Word>.toWordArray() = toShortArray()
+
+fun ByteArray.toWord(): Word {
+    require(this.size == 2) { "byte[] is not of size 2" }
     val high = (this[0].toInt() shl 8).toWord()
     val low  = this[1].toWord()
     return (high + low).toWord()
 }
 
-fun Word.toBytes(): List<Byte> {
+fun Word.toBytes(): ByteArray {
     val high = (this.toInt() shr 8).toByte()
     val low  = this.toByte()
-    return listOf(high, low)
+    return byteArrayOf(high, low)
 }
 
-fun Int.toWord() = toShort()
-fun Int.toUWord() = toUShort()
+fun WordArray.toBytes() = ByteArray(size * 2).also {
+    this.forEachIndexed { i, n ->
+        it[i * 2] = (n.toInt() shr 8).toByte()
+        it[i * 2 + 1] = n.toByte()
+    }
+}
 
-fun Byte.toWord() = toShort()
+fun Number.toWord() = toShort()
+fun Int.toUWord() = toUShort()
 fun Byte.toUWord() = toUShort()
 
 fun String.toWord() = toShort()

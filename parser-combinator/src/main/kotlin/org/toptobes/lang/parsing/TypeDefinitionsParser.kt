@@ -1,6 +1,8 @@
 package org.toptobes.lang.parsing
 
 import org.toptobes.lang.ast.*
+import org.toptobes.lang.utils.toWord
+import org.toptobes.lang.utils.zipMap
 import org.toptobes.parsercombinator.contextual
 import org.toptobes.parsercombinator.impls.any
 import org.toptobes.parsercombinator.impls.str
@@ -15,7 +17,7 @@ private val declaredType = contextual {
 
     val name = ctx parse -identifier orCrash "Error parsing declared type's identifier"
 
-    ctx addType DeclaredTypeDefinition(name)
+    ctx addType TypeInterpretation(name, emptyMap())
     succeed(DeleteThisNode)
 }
 
@@ -24,13 +26,17 @@ private val definedType = contextual {
 
     val name = ctx parse -identifier orCrash "Error parsing declared type's identifier"
 
-    ctx addType DeclaredTypeDefinition(name)
+    ctx addType TypeInterpretation(name, emptyMap())
 
     ctx parse -str("=")
 
     val fields = ctx parse fieldsParser orCrash "Error parsing declared type's fields"
 
-    ctx addType ConcreteTypeDefinition(name, fields)
+    val offsets = fields.scan(0) { acc, field ->
+        acc + field.interpretation.size
+    }.map(Int::toWord)
+
+    ctx addType TypeInterpretation(name, offsets zipMap fields)
     succeed(DeleteThisNode)
 }
 
@@ -68,17 +74,21 @@ private val embeddedField = contextual {
     val type = ctx.state.types[typeName] ?: crash("$typeName is not a tyoe")
     type.ensureIsConcrete()
 
-    succeed(type.fields)
+    succeed(type.fields.values)
 }
 
 private val normalField = contextual {
     val type = ctx parse -identifier orCrash "Error parsing type for field"
-    val name = ctx parse -identifier orCrash "Error parsing name for field"
+    val name     = ctx parse -identifier orCrash "Error parsing name for field"
 
     val field = when (type) {
-        "byte", "db" -> ByteField(name)
-        "word", "dw" -> WordField(name)
-        else -> NestedTypeField(name, type)
+        "byte", "db" -> Field(name, ByteInterpretation)
+        "word", "dw" -> Field(name, WordInterpretation)
+        else -> {
+            val typeImpl = ctx.state.types[type] ?: fail("$type is not a type")
+            typeImpl.ensureIsConcrete()
+            Field(name, typeImpl)
+        }
     }
 
     succeed(listOf(field))

@@ -31,16 +31,16 @@ private fun parseConstructorArgs(type: TypeInterpretation, name: String, allocTy
     type.ensureIsConcrete()
 
     val values = mutableListOf<Definition<*>>()
-    val fields = type.offsets.values.toMutableList()
+    val fields = type.fields.values.toMutableList()
 
     val isNamedCheck = -!identifier then -str(":")
     val isNamedConstructor = ctx canPeek isNamedCheck
 
     while (fields.isNotEmpty()) {
         val nextField = if (isNamedConstructor) {
-            ctx parse nextNamedTypeConstructorField(type, fields) orCrash "Error parsing (named) field in ${type.name} constructor"
+            ctx parse nextNamedTypeConstructorField(type, fields) orCrash "Error parsing (named) field in ${type.typeName} constructor"
         } else {
-            ctx parse nextUnnamedTypeConstructorField(fields) orCrash "Error parsing (unnamed) field in ${type.name} constructor"
+            ctx parse nextUnnamedTypeConstructorField(fields) orCrash "Error parsing (unnamed) field in ${type.typeName} constructor"
         }
 
         values += when (nextField.interpretation) {
@@ -51,7 +51,7 @@ private fun parseConstructorArgs(type: TypeInterpretation, name: String, allocTy
         }
 
         if (fields.isNotEmpty()) {
-            ctx parse -str(',') orCrash "'${type.name}' constructor missing comma"
+            ctx parse -str(',') orCrash "'${type.typeName}' constructor missing comma"
         }
     }
 
@@ -81,14 +81,14 @@ private fun nextUnnamedTypeConstructorField(fields: MutableList<Field>) = contex
     succeed(field)
 }
 
-private fun nextNamedTypeConstructorField(type: TypeDefinition, fields: MutableList<Field>) = contextual { ctx ->
+private fun nextNamedTypeConstructorField(type: TypeInterpretation, fields: MutableList<Field>) = contextual { ctx ->
     val fieldNameParser = -any(*fields.map { str(it.name) }.toTypedArray())
-    val fieldName = ctx parse fieldNameParser orCrash "Type constructor for '${type.name}' missing field(s)"
+    val fieldName = ctx parse fieldNameParser orCrash "Type constructor for '${type.typeName}' missing field(s)"
     val fieldTypeIdx = fields.indexOfFirst { it.name == fieldName }
 
     val fieldType = fields[fieldTypeIdx]
     fields.removeAt(fieldTypeIdx)
 
-    (ctx parse -str(":")) orCrash "Named type constructor for '${type.name}' missing a :"
+    (ctx parse -str(":")) orCrash "Named type constructor for '${type.typeName}' missing a :"
     succeed(fieldType)
 }

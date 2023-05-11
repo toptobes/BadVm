@@ -1,3 +1,5 @@
+@file:Suppress("ArrayInDataClass")
+
 package org.toptobes.lang.ast
 
 import org.toptobes.lang.utils.Word
@@ -14,24 +16,24 @@ data class Constant(override val name: String, val bytes: ImmediateBytes) : Defi
 data class Variable(override val name: String, val bytes: PromisedBytes) : Definition<PromisedBytes>
 
 sealed interface Bytes : AstNode {
-    val bytes: List<Byte>
+    val bytes: ByteArray
     val interpretation: (String) -> Interpretation
 }
 
 data class ImmediateBytes(
-    override val bytes: List<Byte>,
+    override val bytes: ByteArray,
     override val interpretation: (String) -> Interpretation
 ) : Bytes
 
-class PromisedBytes(
-    val bytesSupplier: () -> List<Byte>,
+data class PromisedBytes(
+    val bytesSupplier: () -> ByteArray,
     override val interpretation: (String) -> Interpretation
 ) : Bytes {
-    override val bytes: List<Byte>
+    override val bytes: ByteArray
         get() = bytesSupplier()
 }
 
-data class BytesToAllocate(val bytes: List<Byte>) {
+data class BytesToAllocate(val bytes: ByteArray) {
     var address by Delegates.notNull<Word>()
 }
 
@@ -47,25 +49,21 @@ object ByteInterpretation : Interpretation {
     override val size: Word = 1
 }
 
-object WordPtrInterpretation : Interpretation {
+class Vec<T : Interpretation>(size: Number) : Interpretation {
+    override val size: Word = size.toWord()
+}
+
+class Ptr<T : Interpretation>() : Interpretation {
     override val size: Word = 2
 }
 
-object BytePtrInterpretation : Interpretation {
-    override val size: Word = 1
-}
+data class Field(val name: String, val interpretation: Interpretation)
 
-class WordArrayInterpretation(override val size: Word) : Interpretation
-
-class ByteArrayInterpretation(override val size: Word) : Interpretation
-
-data class Field(val name: String, val offset: Int, val interpretation: Interpretation)
-
-data class TypeInterpretation(val name: String, val offsets: Map<Word, Field>) : Interpretation {
-    override val size = offsets.values.sumOf { it.offset }.toWord()
+data class TypeInterpretation(val typeName: String, val fields: Map<Word, Field>) : Interpretation {
+    override val size = fields.keys.sum().toWord()
 
     fun ensureIsConcrete() {
-        if (offsets.isEmpty()) throw ParsingException("$name is a declared type, expected defined")
+        if (fields.isEmpty()) throw ParsingException("$typeName is a declared type, expected defined")
     }
 }
 

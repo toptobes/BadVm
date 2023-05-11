@@ -1,5 +1,3 @@
-@file:Suppress("IMPLICIT_NOTHING_TYPE_ARGUMENT_IN_RETURN_POSITION")
-
 package org.toptobes.lang.parsing.definitions
 
 import org.toptobes.lang.ast.*
@@ -18,11 +16,11 @@ private fun singleByte(name: String, allocType: AllocationType) = contextual {
 
     val definition = when (allocType) {
         Allocated -> {
-            val handle = ctx allocBytes listOf(byte)
-            Variable(name, PromisedBytes(handle) { BytePtrInterpretation })
+            val handle = ctx allocBytes byteArrayOf(byte)
+            Variable(name, PromisedBytes(handle) { Ptr<ByteInterpretation>() })
         }
         Immediate -> {
-            Constant(name, ImmediateBytes(listOf(byte)) { ByteInterpretation })
+            Constant(name, ImmediateBytes(byteArrayOf(byte)) { ByteInterpretation })
         }
     }
 
@@ -35,10 +33,10 @@ private fun byteArray(name: String, allocType: AllocationType) = contextual {
     val definition = when (allocType) {
         Allocated -> {
             val handle = ctx allocBytes bytes
-            Variable(name, PromisedBytes(handle) { BytePtrInterpretation })
+            Variable(name, PromisedBytes(handle) { Ptr<ByteInterpretation>() })
         }
         Immediate -> {
-            Constant(name, ImmediateBytes(bytes) { ByteArrayInterpretation(bytes.size.toWord()) })
+            Constant(name, ImmediateBytes(bytes) { Vec<ByteInterpretation>(bytes.size) })
         }
     }
 
@@ -46,8 +44,8 @@ private fun byteArray(name: String, allocType: AllocationType) = contextual {
 }
 
 private val literalByteArray = cStyleArrayOf(any(
-    byte..(::listOf)
-))..{ it.flatten() }
+    byte
+))..{ it.toByteArray() }
 
 private val byteArrayBuilder = contextual {
     val numBytes = word..(Word::toString)
@@ -66,11 +64,11 @@ private val byteArrayBuilder = contextual {
         else -> crash("Invalid initializer ($init) in byte array builder")
     }
 
-    val bytes = List(n.toInt()) { initByte ?: it.toByte() }
+    val bytes = ByteArray(n.toInt()) { initByte ?: it.toByte() }
     succeed(bytes)
 }
 
 private val string = betweenDoubleQuotes(until(char) { it.ifOkay { result == '"' } ?: false })
-    .map { it.map { chr -> chr.code.toByte() } }
+    .map { it.map { chr -> chr.code.toByte() }.toByteArray() }
 
 private fun String.isByte() = toByteOrNull() != null
