@@ -1,49 +1,28 @@
 package org.toptobes.lang.parsing.definitions
 
-import org.toptobes.lang.ast.*
-import org.toptobes.lang.parsing.*
+import org.toptobes.lang.parsing.byte
+import org.toptobes.lang.parsing.cStyleArrayOf
+import org.toptobes.lang.parsing.identifier
+import org.toptobes.lang.parsing.word
 import org.toptobes.lang.utils.Word
 import org.toptobes.parsercombinator.*
 import org.toptobes.parsercombinator.impls.*
 
-fun byteConstructor(allocType: AllocationType) = lazy {
-    any(byteArray(allocType), singleByte(allocType))
+val singleByte = contextual {
+    val bytes = ctx parse any(byte..{ byteArrayOf(it) }) orFail "Not a single byte"
+    succeed(bytes)
 }
 
-private fun singleByte(allocType: AllocationType) = contextual {
-    val rawByte = ctx parse byte orFail "Not a single byte"
-
-    val definition = when (allocType) {
-        Allocated -> {
-            val handle = ctx allocBytes byteArrayOf(rawByte)
-            val bytes = PromisedBytes(handle) { Ptr<ByteInterpretation>() }
-            makeVariable(bytes) to bytes
-        }
-        Immediate -> {
-            val bytes = ImmediateBytes(byteArrayOf(rawByte)) { ByteInterpretation };
-            makeConstant(bytes) to bytes
-        }
-    }
-
-    succeed(definition)
+val byteArray = contextual {
+    val bytes = ctx parse any(byteArrayBuilder, literalByteArray, string, embeddedBytes) orFail "Not a byte array"
+    succeed(bytes)
 }
 
-private fun byteArray(allocType: AllocationType) = contextual {
-    val rawBytes = ctx parse any(byteArrayBuilder, literalByteArray, string) orFail "Not a byte array"
-
-    val definition = when (allocType) {
-        Allocated -> {
-            val handle = ctx allocBytes rawBytes
-            val bytes = PromisedBytes(handle) { Ptr<ByteInterpretation>() }
-            makeVariable(bytes) to bytes
-        }
-        Immediate -> {
-            val bytes = ImmediateBytes(rawBytes) { Vec<ByteInterpretation>(rawBytes.size) }
-            makeConstant(bytes) to bytes
-        }
-    }
-
-    succeed(definition)
+private val embeddedBytes = contextual {
+    ctx parse -str("...") orFail "Not byte embedding"
+    val name = ctx parse -identifier orCrash "Not an identifier"
+    val symbol = ctx.state.vars[name] orCrash "$name is not a valid identifier"
+    succeed(symbol.bytes)
 }
 
 private val literalByteArray = cStyleArrayOf(any(

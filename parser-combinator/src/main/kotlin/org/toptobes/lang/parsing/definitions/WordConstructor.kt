@@ -1,51 +1,22 @@
 package org.toptobes.lang.parsing.definitions
 
-import org.toptobes.lang.ast.*
-import org.toptobes.lang.parsing.*
+import org.toptobes.lang.ast.WordInterpretation
+import org.toptobes.lang.parsing.cStyleArrayOf
+import org.toptobes.lang.parsing.word
 import org.toptobes.lang.utils.*
 import org.toptobes.parsercombinator.*
 import org.toptobes.parsercombinator.impls.*
 
-fun wordConstructor(allocType: AllocationType) = lazy {
-    any(wordArray(allocType), singleWord(allocType))
+val singleWord = contextual {
+    val word = ctx parse word orFail "Not a single word"
+    val bytes = word.toBytes()
+    succeed(bytes)
 }
 
-private fun singleWord(allocType: AllocationType) = contextual {
-    val rawWord = ctx parse word orFail "Not a single word"
-    val rawBytes = rawWord.toBytes()
-
-    val definition = when (allocType) {
-        Allocated -> {
-            val handle = ctx allocBytes rawBytes
-            val bytes = PromisedBytes(handle) { Ptr<WordInterpretation>() }
-            makeVariable(bytes) to bytes
-        }
-        Immediate -> {
-            val bytes = ImmediateBytes(rawBytes) { WordInterpretation }
-            makeConstant(bytes) to bytes
-        }
-    }
-
-    succeed(definition)
-}
-
-private fun wordArray(allocType: AllocationType) = contextual {
-    val rawWords = ctx parse any(wordArrayBuilder, literalWordArray, string) orFail "Not a word array"
-    val rawBytes = rawWords.toBytes()
-
-    val definition = when (allocType) {
-        Allocated -> {
-            val handle = ctx allocBytes rawBytes
-            val bytes = PromisedBytes(handle) { Ptr<WordInterpretation>() }
-            makeVariable(bytes) to bytes
-        }
-        Immediate -> {
-            val bytes = ImmediateBytes(rawBytes) { Vec<WordInterpretation>(rawBytes.size) }
-            makeConstant(bytes) to bytes
-        }
-    }
-
-    succeed(definition)
+val wordArray = contextual {
+    val words = ctx parse any(wordArrayBuilder, literalWordArray, string) orFail "Not a word array"
+    val bytes = words.toBytes()
+    succeed(bytes)
 }
 
 private val literalWordArray = cStyleArrayOf(any(

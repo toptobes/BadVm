@@ -7,26 +7,28 @@ import org.toptobes.lang.utils.toWord
 import org.toptobes.parsercombinator.ParsingException
 import kotlin.properties.Delegates
 
-interface Symbol: SyntheticOperand {
+sealed interface Symbol: SyntheticOperand {
+    val bytes: ByteArray
     val name: String
 }
 
 data class Constant(
     override val name: String,
-    val bytes: ByteArray,
-    val interpretation: (String) -> Interpretation,
+    override val bytes: ByteArray,
 ) : Symbol
 
 data class Variable(
     override val name: String,
-    val addr: Word,
-    val bytes: ByteArray,
-    val interpretation: (String) -> Interpretation,
-) : Symbol
+    val allocatedBytes: ByteArray,
+) : Symbol {
+    override lateinit var bytes: ByteArray
+}
 
-data class Label(override val name: String) : Symbol
+data class Label(override val name: String) : Symbol {
+    override lateinit var bytes: ByteArray
+}
 
-interface Interpretation {
+sealed interface Interpretation {
     val size: Word
 }
 
@@ -38,18 +40,18 @@ object ByteInterpretation : Interpretation {
     override val size: Word = 1
 }
 
-class Vec<T : Interpretation>(size: Number) : Interpretation {
+class Vec(val interpretation: Interpretation, size: Number) : Interpretation {
     override val size: Word = size.toWord()
 }
 
-class Ptr<T : Interpretation> : Interpretation {
+class Ptr(val interpretation: Interpretation) : Interpretation {
     override val size: Word = 2
 }
 
-data class Field<T : Interpretation>(val name: String, val interpretation: T)
+data class Field<T : Interpretation>(val name: String, val interpretation: T, val bytes: ByteArray, val offset: Word)
 
-data class TypeInterpretation(val typeName: String, val fields: Map<Word, Field<*>>) : Interpretation {
-    override val size = fields.keys.sum().toWord()
+data class TypeInterpretation(val typeName: String, val fields: Map<String, Field<*>>) : Interpretation {
+    override val size = fields.values.sumOf { it.interpretation.size.toInt() }.toWord()
 
     fun ensureIsConcrete() {
         if (fields.isEmpty()) throw ParsingException("$typeName is a declared type, expected defined")

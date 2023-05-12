@@ -41,7 +41,7 @@ private val definedType = contextual {
 }
 
 private val fieldsParser = contextual {
-    val fields = mutableListOf<Field>()
+    val fields = mutableListOf<Field<*>>()
     var firstMatch = true
 
     while (true) {

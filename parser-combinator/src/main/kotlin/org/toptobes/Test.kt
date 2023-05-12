@@ -6,16 +6,18 @@ import org.toptobes.parsercombinator.DescriptiveParsingException
 fun main() {
     try {
         codeParser.log("""
-            intrp Hi = 
+            type Hi = 
               | byte b
             
-            intrp Hi2 = Hi
+            type Hi2 = Hi
               | Hi h1
               | byte b2
             
-            byte x = [21, ?]
+            imm byte x = 5
             
-            Hi2 hi = Hi2 { 1, Hi { 1 }, 2 }
+            Hi2 hi = Hi2 { 1, Hi { b: x }, 2 }
+            
+            mov ax, 3
         """.trimIndent())
     } catch (e: DescriptiveParsingException) {
         println(e.message)

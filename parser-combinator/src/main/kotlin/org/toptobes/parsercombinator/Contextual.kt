@@ -1,10 +1,11 @@
 package org.toptobes.parsercombinator
 
 import org.toptobes.lang.ast.*
+import org.toptobes.lang.utils.toBytes
+import org.toptobes.lang.utils.toWord
 
 class Context(initialState: OkayParseState<*>) {
     var state: OkayParseState<*> = initialState
-
     var errorStr: String? = null
 
     infix fun <R> peek(parser: Parser<R>): R? {
@@ -37,11 +38,30 @@ class Context(initialState: OkayParseState<*>) {
     }
 
     infix fun addVar(def: Symbol) {
-        state = state.copy(vars = state.vars + (def.name to def))
+        if (def is Variable) {
+            def.bytes = state.vars.nextAddress.toBytes()
+        }
+
+        if (def is Label) {
+            def.bytes = state.vars.nextAddress.toBytes()
+        }
+
+        val nextMap = state.vars + (def.name to def)
+        val nextAddress = (state.vars.nextAddress + when (def) {
+            is Constant -> 0
+            is Label    -> 2
+            is Variable -> 2
+        }).toWord()
+
+        state = state.copy(vars = state.vars.copy(vars = nextMap, nextAddress = nextAddress))
     }
 
     infix fun addType(def: TypeInterpretation) {
         state = state.copy(types = state.types + (def.typeName to def))
+    }
+
+    fun assume(name: String, interpretation: Interpretation) {
+        state = state.copy(assumptions = state.assumptions + (name to interpretation))
     }
 }
 

@@ -1,5 +1,6 @@
 package org.toptobes.lang.parsing
 
+import org.toptobes.lang.ast.*
 import org.toptobes.lang.utils.UWord
 import org.toptobes.lang.utils.Word
 import org.toptobes.lang.utils.toWord
@@ -51,4 +52,36 @@ val byte = number
 
 fun <R> cStyleArrayOf(parser: Parser<R>): Parser<List<R>> {
     return betweenCurlyBrackets(sepByCommas(parser))
+}
+
+inline fun <reified T> symbol(crashing: Boolean = false) = symbol.flatMap {
+    if (it.first !is T) {
+        if (crashing) crash("${it::class.simpleName} is not ${T::class.simpleName}")
+    }
+    succeed(it)
+}
+
+val symbol = contextual {
+    val names = ctx parse -sepByPeriods(-identifier) orFail "Not a symbol"
+
+    val firstSymbol = ctx.state.vars[names[0]] orCrash "${names[0]} is not a valid identifier"
+
+    val (interpretation, resolved) = when (val interpretation = ctx.state.assumptions[names[0]]!!) {
+        is TypeInterpretation -> resolveField(interpretation, names.drop(1))
+        is Ptr -> WordInterpretation to firstSymbol.bytes
+        else -> interpretation to firstSymbol.bytes
+    }
+
+    succeed(interpretation to resolved)
+}
+
+private fun resolveField(type: TypeInterpretation, fieldNames: List<String>): Pair<Interpretation, ByteArray> {
+    val field = type.fields[fieldNames[0]]
+        ?: throw ParsingException("${fieldNames[0]} is not a valid field")
+
+    return when (val interpretation = field.interpretation) {
+        is TypeInterpretation -> resolveField(interpretation, fieldNames.drop(1))
+        is Ptr -> WordInterpretation to field.bytes
+        else -> interpretation to field.bytes
+    }
 }
