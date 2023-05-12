@@ -6,38 +6,42 @@ import org.toptobes.lang.utils.*
 import org.toptobes.parsercombinator.*
 import org.toptobes.parsercombinator.impls.*
 
-fun wordConstructor(name: String, allocType: AllocationType) = lazy {
-    any(wordArray(name, allocType), singleWord(name, allocType))
+fun wordConstructor(allocType: AllocationType) = lazy {
+    any(wordArray(allocType), singleWord(allocType))
 }
 
-private fun singleWord(name: String, allocType: AllocationType) = contextual {
-    val word = ctx.parse(word) orFail "Not a single word"
-    val bytes = word.toBytes()
+private fun singleWord(allocType: AllocationType) = contextual {
+    val rawWord = ctx parse word orFail "Not a single word"
+    val rawBytes = rawWord.toBytes()
 
     val definition = when (allocType) {
         Allocated -> {
-            val handle = ctx allocBytes bytes
-            Variable(name, PromisedBytes(handle) { Ptr<WordInterpretation>() })
+            val handle = ctx allocBytes rawBytes
+            val bytes = PromisedBytes(handle) { Ptr<WordInterpretation>() }
+            makeVariable(bytes) to bytes
         }
         Immediate -> {
-            Constant(name, ImmediateBytes(bytes) { WordInterpretation })
+            val bytes = ImmediateBytes(rawBytes) { WordInterpretation }
+            makeConstant(bytes) to bytes
         }
     }
 
     succeed(definition)
 }
 
-private fun wordArray(name: String, allocType: AllocationType) = contextual {
-    val words = ctx parse any(wordArrayBuilder, literalWordArray, string) orFail "Not a word array"
-    val bytes = words.toBytes()
+private fun wordArray(allocType: AllocationType) = contextual {
+    val rawWords = ctx parse any(wordArrayBuilder, literalWordArray, string) orFail "Not a word array"
+    val rawBytes = rawWords.toBytes()
 
     val definition = when (allocType) {
         Allocated -> {
-            val handle = ctx allocBytes bytes
-            Variable(name, PromisedBytes(handle) { Ptr<WordInterpretation>() })
+            val handle = ctx allocBytes rawBytes
+            val bytes = PromisedBytes(handle) { Ptr<WordInterpretation>() }
+            makeVariable(bytes) to bytes
         }
         Immediate -> {
-            Constant(name, ImmediateBytes(bytes) { Vec<WordInterpretation>(bytes.size) })
+            val bytes = ImmediateBytes(rawBytes) { Vec<WordInterpretation>(rawBytes.size) }
+            makeConstant(bytes) to bytes
         }
     }
 

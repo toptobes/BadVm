@@ -7,7 +7,7 @@ import org.toptobes.lang.utils.toWord
 import org.toptobes.parsercombinator.ParsingException
 import kotlin.properties.Delegates
 
-interface Definition<T : Bytes> {
+interface Definition<T : Bytes> : SyntheticOperand {
     val name: String
 }
 
@@ -53,13 +53,13 @@ class Vec<T : Interpretation>(size: Number) : Interpretation {
     override val size: Word = size.toWord()
 }
 
-class Ptr<T : Interpretation>() : Interpretation {
+class Ptr<T : Interpretation> : Interpretation {
     override val size: Word = 2
 }
 
-data class Field(val name: String, val interpretation: Interpretation)
+data class Field<T : Interpretation>(val name: String, val interpretation: T)
 
-data class TypeInterpretation(val typeName: String, val fields: Map<Word, Field>) : Interpretation {
+data class TypeInterpretation(val typeName: String, val fields: Map<Word, Field<*>>) : Interpretation {
     override val size = fields.keys.sum().toWord()
 
     fun ensureIsConcrete() {

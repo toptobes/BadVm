@@ -8,6 +8,7 @@ import org.toptobes.parsercombinator.contextual
 import org.toptobes.parsercombinator.impls.pool
 import org.toptobes.parsercombinator.impls.str
 import org.toptobes.parsercombinator.unaryMinus
+import kotlin.contracts.contract
 
 val variableDefinition = contextual {
     val allocType = ctx parse modifiers orCrash "Error reading modifiers"
@@ -17,13 +18,13 @@ val variableDefinition = contextual {
 
     ctx parse -str("=") orCrash "Missing ="
 
-    val (definition, interpretation) = ctx parse when (type) {
-        "byte", "db" -> byteConstructor(name, allocType)
-        "word", "dw" -> wordConstructor(name, allocType)
+    val (constructor, bytes) = ctx parse when (type) {
+        "byte", "db" -> byteConstructor(allocType)
+        "word", "dw" -> wordConstructor(allocType)
         else -> typeConstructor(name, allocType)
     } orCrash "Error parsing $name's initializer"
 
-    varDef.forEach(ctx::addVar)
+    ctx addVar constructor(name)
     succeed(DeleteThisNode)
 }
 
@@ -47,3 +48,11 @@ private val modifiers = contextual {
 sealed interface AllocationType
 object Allocated : AllocationType
 object Immediate : AllocationType
+
+fun makeVariable(bytes: PromisedBytes): (String) -> Variable {
+    return { name: String -> Variable(name, bytes) }
+}
+
+fun makeConstant(bytes: ImmediateBytes): (String) -> Constant {
+    return { name: String -> Constant(name, bytes) }
+}

@@ -5,9 +5,9 @@ import org.toptobes.lang.utils.reg16Codes
 import org.toptobes.lang.utils.reg8Codes
 import kotlin.properties.Delegates
 
-interface Argument : AstNode
+interface SyntheticOperand : AstNode
 
-interface Operand : Argument {
+interface Operand : SyntheticOperand {
     val operandAssociation: String
 }
 

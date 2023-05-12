@@ -4,7 +4,7 @@ import org.toptobes.lang.parsing.instructions
 
 data class SyntheticInstruction(
     val mnemonic: String,
-    val args: List<Argument>,
+    val args: List<SyntheticOperand>,
 ) {
     override fun toString() = """
         { "$mnemonic": ${args.map { "\"${it.javaClass.simpleName}\"" }} }
