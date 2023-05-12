@@ -7,35 +7,24 @@ import org.toptobes.lang.utils.toWord
 import org.toptobes.parsercombinator.ParsingException
 import kotlin.properties.Delegates
 
-interface Definition<T : Bytes> : SyntheticOperand {
+interface Symbol: SyntheticOperand {
     val name: String
 }
 
-data class Constant(override val name: String, val bytes: ImmediateBytes) : Definition<ImmediateBytes>
+data class Constant(
+    override val name: String,
+    val bytes: ByteArray,
+    val interpretation: (String) -> Interpretation,
+) : Symbol
 
-data class Variable(override val name: String, val bytes: PromisedBytes) : Definition<PromisedBytes>
+data class Variable(
+    override val name: String,
+    val addr: Word,
+    val bytes: ByteArray,
+    val interpretation: (String) -> Interpretation,
+) : Symbol
 
-sealed interface Bytes : AstNode {
-    val bytes: ByteArray
-    val interpretation: (String) -> Interpretation
-}
-
-data class ImmediateBytes(
-    override val bytes: ByteArray,
-    override val interpretation: (String) -> Interpretation
-) : Bytes
-
-data class PromisedBytes(
-    val bytesSupplier: () -> ByteArray,
-    override val interpretation: (String) -> Interpretation
-) : Bytes {
-    override val bytes: ByteArray
-        get() = bytesSupplier()
-}
-
-data class BytesToAllocate(val bytes: ByteArray) {
-    var address by Delegates.notNull<Word>()
-}
+data class Label(override val name: String) : Symbol
 
 interface Interpretation {
     val size: Word

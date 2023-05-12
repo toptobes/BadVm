@@ -36,22 +36,12 @@ class Context(initialState: OkayParseState<*>) {
         return parse(parser) != null
     }
 
-    infix fun addVar(def: Definition<*>) {
+    infix fun addVar(def: Symbol) {
         state = state.copy(vars = state.vars + (def.name to def))
     }
 
     infix fun addType(def: TypeInterpretation) {
         state = state.copy(types = state.types + (def.typeName to def))
-    }
-
-    fun assume(name: String, interpretation: Interpretation) {
-        state = state.copy(assumptions = state.assumptions + (name to interpretation))
-    }
-
-    infix fun allocBytes(bytes: ByteArray): () -> ByteArray {
-        val toAlloc = BytesToAllocate(bytes)
-        state = state.copy(allocQueue = state.allocQueue + toAlloc)
-        return { toAlloc.bytes  }
     }
 }
 
