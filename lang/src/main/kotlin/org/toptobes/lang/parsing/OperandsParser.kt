@@ -10,15 +10,15 @@ import org.toptobes.parsercombinator.impls.*
 import org.toptobes.parsercombinator.rangeTo
 import org.toptobes.parsercombinator.unaryMinus
 
-private val reg16 = any(reg16Codes.keys.map(::str))..(::Reg16)
-private val reg8  = any(reg8Codes .keys.map(::str))..(::Reg8)
-private val ptr   = betweenSquareBrackets(reg16.map { RegPtr(it.regName) })
+val reg16 = any(reg16Codes.keys.map(::str))..(::Reg16)
+val reg8  = any(reg8Codes .keys.map(::str))..(::Reg8)
+val ptr   = betweenSquareBrackets(reg16.map { RegPtr(it.regName) })
 
-private val imm16 = singleWord..{ it.toWord() }..(::Imm16)
-private val imm8  = singleByte..{ it[0] }..(::Imm8)
+val imm16 = singleWord..{ it.toWord() }..(::Imm16)
+val imm8  = singleByte..{ it[0] }..(::Imm8)
 
-private val mem16 = mem.require { it.first.interpretation == WordInterpretation }..{ it.second.toWord() }..(::Mem16)
-private val mem8  = mem.require { it.first.interpretation == ByteInterpretation }..{ it.second.toWord() }..(::Mem8)
+val mem16 = mem.require { it.first.interpretation == WordInterpretation }..{ it.second.toWord() }..(::Mem16)
+val mem8  = mem.require { it.first.interpretation == ByteInterpretation }..{ it.second.toWord() }..(::Mem8)
 
 private val lbl = -label..{ Lbl(it.name) }
 

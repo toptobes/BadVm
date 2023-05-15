@@ -3,9 +3,7 @@
 package org.toptobes.lang.parsing
 
 import org.toptobes.lang.ast.*
-import org.toptobes.lang.utils.Word
-import org.toptobes.lang.utils.prettyString
-import org.toptobes.lang.utils.toBytes
+import org.toptobes.lang.utils.*
 import org.toptobes.parsercombinator.ParsingException
 import org.toptobes.parsercombinator.contextual
 import org.toptobes.parsercombinator.impls.*
@@ -99,10 +97,11 @@ fun const(size: Int) = contextual {
 }
 
 private val constPtr = contextual {
+    ctx parse -str("<") orFail "Not a const ptr"
     val interpretation = ctx parse (str("word") or str("byte")) orCrash "Missing ptr type (word | byte)"
-    val ptrInterpretation = Ptr(if (interpretation == "byte") ByteInterpretation else WordInterpretation)
+    ctx parse -str(">") orCrash "Const ptr cast missing >"
 
-    ctx parse -str("ptr") orCrash "Missing 'ptr' after $interpretation"
+    val ptrInterpretation = Ptr(if (interpretation == "byte") ByteInterpretation else WordInterpretation)
 
     ctx.parse(word) {
         succeed(ptrInterpretation to it.toBytes())
@@ -121,7 +120,7 @@ private val constPtr = contextual {
     }
 
     succeed(ptrInterpretation to bytes)
-}.let { between(str("{"), -it, -str("}")) }
+}
 
 private val varPtr = contextual {
     val (names, symbol, interpretation) = ctx parse initialSymbolAndFields orCrash "Error parsing fields for var ptr"
@@ -168,7 +167,7 @@ private fun getField(names: List<String>, type: TypeInterpretation): Field<*> {
     }
 }
 
-private fun getFieldOrTypeOffset(names: List<String>, type: TypeInterpretation): Int {
+fun getFieldOrTypeOffset(names: List<String>, type: TypeInterpretation): Int {
     val name = names.firstOrNull()
         ?: return 0
 

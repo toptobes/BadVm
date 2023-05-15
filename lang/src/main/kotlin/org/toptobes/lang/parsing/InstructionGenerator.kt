@@ -2,13 +2,11 @@
 
 package org.toptobes.lang.parsing
 
-import org.toptobes.lang.ast.Instruction
-import org.toptobes.lang.ast.Operand
+import org.toptobes.lang.ast.*
+import org.toptobes.lang.utils.reg16Codes
+import org.toptobes.lang.utils.toWord
 import org.toptobes.parsercombinator.*
-import org.toptobes.parsercombinator.impls.any
-import org.toptobes.parsercombinator.impls.repeatedly
-import org.toptobes.parsercombinator.impls.sepByCommas
-import org.toptobes.parsercombinator.impls.str
+import org.toptobes.parsercombinator.impls.*
 import java.io.File
 
 /* TODO: More efficient instruction parser that doesn't backtrack as much */
@@ -28,8 +26,8 @@ private val argSizes = mapOf(
     "ptr"   to 1,
     "imm8"  to 1,
     "imm16" to 2,
-    "mem8" to 2,
-    "mem16"  to 2,
+    "mem8"  to 2,
+    "mem16" to 2,
 )
 
 val instructions = File("../opcodes")
@@ -56,13 +54,41 @@ val instructions = File("../opcodes")
     .groupBy { it.mnemonic.lowercase() }
     .mapValues { (_, variations) -> variations.sortedByDescending { it.numArgs } }
 
+private val movPtrTypeParser = contextual {
+    ctx parse -str("mov") orCrash "Not an instruction"
+
+    ctx parse -str("<") orFail "Not a cast"
+    val typeName = ctx parse -identifier orCrash "Cast* missing type"
+    ctx parse -str(">") orCrash "Ptr cast missing >"
+
+    val type = ctx.state.types[typeName] orCrash "$typeName is not a valid type"
+
+    val names = ctx parse -sepByPeriods(-identifier, requireMatch = true) orFail "Missing identifier"
+
+    if (names[0] !in reg16Codes.keys) {
+        crash("${names[0]} is not a valid register")
+    }
+
+    val offset = getFieldOrTypeOffset(names.drop(1), type)
+
+    ctx parse -str(",") orCrash "Missing comma"
+
+    val reg2 = ctx parse reg16 orCrash "Error parsing 2nd register"
+
+    succeed(Instruction("mov", listOf(reg2, RegPtr(names[0]), Imm16(offset.toWord()))))
+}
+
 val instructionParsers = instructions
-    .mapValues { (_, list) ->
-        any(*list.map { it.parser }.toTypedArray())
+    .mapValues { (mnemonic, list) ->
+        if (mnemonic == "mov") {
+            any(list.map { it.parser } + movPtrTypeParser)
+        } else {
+            any(list.map { it.parser })
+        }
     }
 
 private fun createSingleInstructionParser(name: String, vararg args: String) = contextual {
-    (ctx parse -str(name)) ?: crash("Not an instruction")
+    ctx parse -str(name) orCrash "Not an instruction"
 
     val parsedArgs = args.foldIndexed(emptyList<Operand>()) { idx, acc, arg ->
         val parser = operandParserMap[arg] ?: crash("No parser found for arg #$idx '$arg' for $name")

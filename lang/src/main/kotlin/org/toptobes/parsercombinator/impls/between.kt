@@ -32,6 +32,9 @@ fun <T> betweenCurlyBrackets(content: Parser<T>) =
 fun <T> betweenParentheses(content: Parser<T>) =
     between(-str("("), content, -str(")"))
 
+fun <T> betweenAngleBrackets(content: Parser<T>) =
+    between(-str("<"), content, -str(">"))
+
 fun <T> betweenDoubleQuotes(content: Parser<T>) =
     between(str("\""), content, str("\""))
 

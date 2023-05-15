@@ -20,16 +20,25 @@ fun main() {
         macro PrintLn reg str =
           | byte RandName(1) = str, 10, 0
           | mov reg, &RandName(1)
-          | mov @{word ptr PRINTER}, reg
-          
+          | mov @<word>PRINTER, reg
+        
         imm word answer = 16
-          
+        
+        type Word =
+          | word word
+        
+        Word myWord = Word{0}
+        
         _start:
+            mov ax, 2
+            mov cx, &myWord
+            mov <Word>cx.word, ax
+            
             PrintLn(cx, str: "Guess a number in 1..100")
             mov dx, answer
             
             LoopHead:
-                mov cx, @{word ptr READER}
+                mov cx, @<word>READER
                 call closeness
                 jmp LoopHead
         
