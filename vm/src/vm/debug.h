@@ -1,7 +1,7 @@
 #ifndef VM_DEBUG_H
 #define VM_DEBUG_H
 
-#define CPU_DEBUG_DUMP_ALL
+//#define CPU_DEBUG_DUMP_ALL
 //#define CPU_DEBUG_TIME_LOOPS
 //#define CPU_DEBUG_STEP_MANUALLY
 
@@ -22,7 +22,7 @@
         if (cpu_reg16(sp) < i || STACK_START < cpu_reg16(sp) - i)                                     \
             continue;                                                                                 \
                                                                                                       \
-        printf("  #%04x: 0x%04x", cpu_reg16(sp) - i, mmap_read_word(cpu->mmap, cpu_reg16(sp) - i));   \
+        printf("  #%04x: 0x%04x", cpu_reg16(sp) - i, mmu_read_word(cpu->mmap, cpu_reg16(sp) - i));   \
                                                                                                       \
         if (i == 0 && cpu_reg16(sp) == cpu_reg16(bp))                                                 \
             printf(" <-- sp, bp");                                                                    \

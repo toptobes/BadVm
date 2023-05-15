@@ -2,6 +2,7 @@
 
 package org.toptobes.lang.ast
 
+import org.toptobes.lang.utils.Word
 import org.toptobes.parsercombinator.ParsingException
 import kotlin.properties.Delegates
 
@@ -18,11 +19,11 @@ data class Variable(
     override val name: String,
     val allocatedBytes: ByteArray,
 ) : Symbol {
-    var address by Delegates.notNull<Short>()
+    var address by Delegates.notNull<Word>()
 }
 
 data class Label(override val name: String) : Symbol {
-    var address by Delegates.notNull<Short>()
+    var address by Delegates.notNull<Word>()
 }
 
 sealed interface Interpretation {

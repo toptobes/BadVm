@@ -2,60 +2,75 @@ package org.toptobes
 
 import org.toptobes.lang.codegen.encode
 import org.toptobes.lang.parsing.codeParser
-import org.toptobes.lang.parsing.instructions
+import org.toptobes.lang.preprocessor.findLabels
 import org.toptobes.lang.preprocessor.findMacros
 import org.toptobes.lang.preprocessor.replaceMacros
+import org.toptobes.lang.utils.Word
+import org.toptobes.lang.utils.prettyString
 import org.toptobes.parsercombinator.DescriptiveParsingException
 import org.toptobes.parsercombinator.isOkay
-import java.io.Serializable
+import java.io.File
 
 fun main() {
     try {
         val code = compile("""
-            imm word PRINT_ADDR = 1024
+        imm word PRINTER = 0x400
+        imm word READER = PRINTER
+        
+        macro PrintLn reg str =
+          | byte RandName(1) = str, 10, 0
+          | mov reg, &RandName(1)
+          | mov @{word ptr PRINTER}, reg
+          
+        imm word answer = 16
+          
+        _start:
+            PrintLn(cx, str: "Guess a number in 1..100")
+            mov dx, answer
             
-            type AddressHolder =
-              | word addr
+            LoopHead:
+                mov cx, @{word ptr READER}
+                call closeness
+                jmp LoopHead
+        
+        closeness:
+            cmp cx, dx
+            jgt GreaterThan
+            jlt LessThan
             
-            imm byte read_addr_as_byte_arr = { 0x04, 0x00 }
-            imm AddressHolder READ = AddressHolder { addr: ...read_addr_as_byte_arr }
-            
-            macro Print reg str_addr =
-              | mov reg, str_addr
-              | mov @{word ptr PRINT_ADDR}, reg
-            
-            byte won = 0
-            
-            _start:
-                byte guess_msg = "Guess a number in 1..10", 0
-                Print(cx, str_addr: &guess_msg)
+            PrintLn(cx, "You got it!")
+            halt
                 
-                LoopHead:
-                    mov ax, @{word ptr READ.addr}
-                    cmp ax, 4
-                    jne LoopHead
-                    
-                byte win_msg = "You got it!", 0
-                Print(cx, &guess_msg)
+            LessThan:
+                PrintLn(cx, "Higher...")
+                ret
                 
-                mov al, 1
-                mov @won, al
+            GreaterThan:
+                PrintLn(cx, "Lower...")
+                ret
         """.trimIndent())
 
         println(code)
+
+        File("../out").bufferedWriter().use { writer ->
+            code?.let { writer.write(it.joinToString(",")) }
+        }
     } catch (e: DescriptiveParsingException) {
         println(e.message)
     }
 }
 
+const val RESERVED_MEM_SIZE: Word = 2
+
 private fun compile(str: String): List<Byte>? {
     val (newStr, macros) = findMacros(str)
     val newStr2 = replaceMacros(macros, newStr)
-    val ast = codeParser(newStr2)
+    val labels = findLabels(newStr2)
+    val ast = codeParser(newStr2, labels)
 
     return if (ast.isOkay()) {
-        println(ast.result)
-        encode(ast.result)
+        println(ast.prettyString())
+        encode(ast.result, ast.vars)
     } else {
         println(ast.error)
         null

@@ -79,17 +79,17 @@ OPCODE_IMPL(not_reg16) {
 }
 
 void init_logic_opcodes(struct cpu_t *cpu) {
-    ASSIGN_OPCODE(shr_imm8_reg16, shr_imm8_reg16_impl);
-    ASSIGN_OPCODE(shr_reg8_reg16, shr_reg8_reg16_impl);
-    ASSIGN_OPCODE(shl_imm8_reg16, shl_imm8_reg16_impl);
-    ASSIGN_OPCODE(shl_reg8_reg16, shl_reg8_reg16_impl);
-    ASSIGN_OPCODE(sar_imm8_reg16, sar_imm8_reg16_impl);
-    ASSIGN_OPCODE(sar_reg8_reg16, sar_reg8_reg16_impl);
-    ASSIGN_OPCODE(and_reg16_reg16, and_reg16_reg16_impl);
-    ASSIGN_OPCODE(and_imm16_reg16, and_imm16_reg16_impl);
-    ASSIGN_OPCODE(xor_reg16_reg16, xor_reg16_reg16_impl);
-    ASSIGN_OPCODE(xor_imm16_reg16, xor_imm16_reg16_impl);
-    ASSIGN_OPCODE(or_reg16_reg16, or_reg16_reg16_impl);
-    ASSIGN_OPCODE(or_imm16_reg16, or_imm16_reg16_impl);
-    ASSIGN_OPCODE(not_reg16, not_reg16_impl);
+    ASSIGN_OPCODE(shr_imm8_reg16);
+    ASSIGN_OPCODE(shr_reg8_reg16);
+    ASSIGN_OPCODE(shl_imm8_reg16);
+    ASSIGN_OPCODE(shl_reg8_reg16);
+    ASSIGN_OPCODE(sar_imm8_reg16);
+    ASSIGN_OPCODE(sar_reg8_reg16);
+    ASSIGN_OPCODE(and_reg16_reg16);
+    ASSIGN_OPCODE(and_imm16_reg16);
+    ASSIGN_OPCODE(xor_reg16_reg16);
+    ASSIGN_OPCODE(xor_imm16_reg16);
+    ASSIGN_OPCODE(or_reg16_reg16);
+    ASSIGN_OPCODE(or_imm16_reg16);
+    ASSIGN_OPCODE(not_reg16);
 }

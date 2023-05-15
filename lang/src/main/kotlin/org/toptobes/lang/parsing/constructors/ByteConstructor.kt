@@ -24,7 +24,7 @@ val byteArray: Parser<ByteArray> get() = contextual {
         singleByte,
     ) orFail "Not a byte array"
 
-    val moreBytes = ctx.parse(-str(",")) {
+    val moreBytes = ctx.parse(-(str(",") or str("++"))) {
         ctx parse -byteArray orCrash "Error parsing byte[] after concat"
     } ?: ByteArray(0)
 

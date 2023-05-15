@@ -6,6 +6,8 @@ import org.toptobes.lang.ast.Instruction
 import org.toptobes.lang.ast.Operand
 import org.toptobes.parsercombinator.*
 import org.toptobes.parsercombinator.impls.any
+import org.toptobes.parsercombinator.impls.repeatedly
+import org.toptobes.parsercombinator.impls.sepByCommas
 import org.toptobes.parsercombinator.impls.str
 import java.io.File
 
@@ -21,13 +23,13 @@ data class InstructionMetadata(
 )
 
 private val argSizes = mapOf(
-    "REG16" to 1,
-    "REG8"  to 1,
-    "PTR"   to 1,
-    "IMM8"  to 1,
-    "IMM16" to 2,
-    "MEM8"  to 2,
-    "MEM16" to 2,
+    "reg16" to 1,
+    "reg8"  to 1,
+    "ptr"   to 1,
+    "imm8"  to 1,
+    "imm16" to 2,
+    "mem8" to 2,
+    "mem16"  to 2,
 )
 
 val instructions = File("../opcodes")
@@ -41,13 +43,13 @@ val instructions = File("../opcodes")
 
         val nameAndArgs = name.split("_")
 
-        val tag = name.uppercase()
-        val mnemonic = nameAndArgs.first().uppercase()
+        val tag = name.lowercase()
+        val mnemonic = nameAndArgs.first()
 
         val args = nameAndArgs.drop(1).reversed().toTypedArray()
         val parser = createSingleInstructionParser(nameAndArgs.first(), *args)
 
-        val size = 1 + args.fold(0) { size, arg -> size + argSizes[arg.uppercase()]!! }
+        val size = 1 + args.fold(0) { size, arg -> size + argSizes[arg]!! }
 
         instructions + InstructionMetadata(mnemonic, tag, code, size, args.size, parser)
     }
@@ -63,7 +65,7 @@ private fun createSingleInstructionParser(name: String, vararg args: String) = c
     (ctx parse -str(name)) ?: crash("Not an instruction")
 
     val parsedArgs = args.foldIndexed(emptyList<Operand>()) { idx, acc, arg ->
-        val parser = operandParserMap[arg.uppercase()] ?: crash("No parser found for arg #$idx '$arg' for $name")
+        val parser = operandParserMap[arg] ?: crash("No parser found for arg #$idx '$arg' for $name")
 
         val parsed = (ctx parse parser) ?: fail("Error with arg #${idx + 1} ($arg) for $name")
 
@@ -85,7 +87,7 @@ val instructionsParser = Parser { oldState ->
     val parsedState = parser.parsePropagating(oldState)
 
     if (parsedState.isErrored()) {
-        throw DescriptiveParsingException("Bad args or format for line '$line'", parsedState)
+        throw DescriptiveParsingException("Bad args or format", parsedState)
     }
 
     return@Parser success(parsedState)

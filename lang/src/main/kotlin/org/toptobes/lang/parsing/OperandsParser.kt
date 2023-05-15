@@ -8,23 +8,26 @@ import org.toptobes.lang.utils.reg8Codes
 import org.toptobes.lang.utils.toWord
 import org.toptobes.parsercombinator.impls.*
 import org.toptobes.parsercombinator.rangeTo
+import org.toptobes.parsercombinator.unaryMinus
 
-val reg16 = any(reg16Codes.keys.map(::str))..(::Reg16)
-val reg8  = any(reg8Codes .keys.map(::str))..(::Reg8)
-val ptr   = betweenSquareBrackets(reg16.map { RegPtr(it.regName) })
+private val reg16 = any(reg16Codes.keys.map(::str))..(::Reg16)
+private val reg8  = any(reg8Codes .keys.map(::str))..(::Reg8)
+private val ptr   = betweenSquareBrackets(reg16.map { RegPtr(it.regName) })
 
-val imm16 = any(word, singleWord..{ it.toWord() })..(::Imm16)
-val imm8  = any(byte, singleByte..{ it[0] })..(::Imm8)
+private val imm16 = singleWord..{ it.toWord() }..(::Imm16)
+private val imm8  = singleByte..{ it[0] }..(::Imm8)
 
-val mem16 = mem.require { it.first.interpretation == WordInterpretation }..{ it.second.toWord() }..(::Mem16)
-val mem8  = mem.require { it.first.interpretation == ByteInterpretation }..{ it.second.toWord() }..(::Mem8)
+private val mem16 = mem.require { it.first.interpretation == WordInterpretation }..{ it.second.toWord() }..(::Mem16)
+private val mem8  = mem.require { it.first.interpretation == ByteInterpretation }..{ it.second.toWord() }..(::Mem8)
+
+private val lbl = -label..{ Lbl(it.name) }
 
 val operandParserMap = mapOf(
-    "REG16" to reg16,
-    "REG8"  to reg8,
-    "PTR"   to ptr,
-    "IMM8"  to imm8,
-    "IMM16" to imm16,
-    "MEM16" to mem16,
-    "MEM8"  to mem8,
+    "reg16" to reg16,
+    "reg8"  to reg8,
+    "ptr"   to ptr,
+    "imm8"  to imm8,
+    "imm16" to imm16,
+    "mem8"  to mem8,
+    "mem16" to any(mem16, lbl),
 )

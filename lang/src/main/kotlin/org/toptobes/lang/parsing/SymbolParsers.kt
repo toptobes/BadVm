@@ -6,7 +6,6 @@ import org.toptobes.lang.ast.*
 import org.toptobes.lang.utils.Word
 import org.toptobes.lang.utils.prettyString
 import org.toptobes.lang.utils.toBytes
-import org.toptobes.lang.utils.toWord
 import org.toptobes.parsercombinator.ParsingException
 import org.toptobes.parsercombinator.contextual
 import org.toptobes.parsercombinator.impls.*
@@ -14,24 +13,23 @@ import org.toptobes.parsercombinator.or
 import org.toptobes.parsercombinator.unaryMinus
 
 val mem = contextual {
-    ctx.parse(-label) {
-        succeed(it)
-    }
-
     ctx parse str("@") orFail "Not mem usage"
     val result = ctx parse any(constPtr, varPtr) orCrash "Failed parsing mem usage"
     succeed(result)
 }
 
-private val label = contextual {
-    val name = ctx parse identifier orFail "Not a label"
+val label = contextual {
+    val name = ctx parse identifier orFail "Not a label usage"
+    ctx parse whitespace orFail "Not a label usage"
     val symbol = ctx.state.vars[name]
+
+    println(symbol)
 
     if (symbol !is Label) {
         fail("$name is not a label")
     }
 
-    succeed(Ptr(WordInterpretation) to symbol.address.toBytes())
+    succeed(symbol)
 }
 
 val addr = contextual {

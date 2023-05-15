@@ -1,5 +1,8 @@
 package org.toptobes.lang.preprocessor
 
+import kotlin.random.Random
+import kotlin.random.nextULong
+
 data class Macro(val name: String, val args: List<String>, val replaceFn: (List<String>) -> String)
 
 fun findMacros(str: String): Pair<String, MutableList<Macro>> {
@@ -23,13 +26,22 @@ fun findMacros(str: String): Pair<String, MutableList<Macro>> {
                 .joinToString("\n")
 
             val replaceFn = { replacedArgs: List<String> ->
-                args.foldIndexed(lines) { idx, prevLines, arg ->
-                    Regex("(\\W)?${arg}(\\W)?").replace(prevLines) { r -> r.groupValues[1] + replacedArgs[idx] + r.groupValues[2] }
+                val argsReplacedLines = args.foldIndexed(lines) { idx, prevLines, arg ->
+                    Regex("(\\W)?${arg}(\\W)?").replace(prevLines) { r ->
+                        r.groupValues[1] + replacedArgs[idx] + r.groupValues[2]
+                    }
                 }
+
+                val seedShifter = Random.nextInt()
+
+                val namesReplacedLines = Regex("RandName\\((\\d+?)\\)").replace(argsReplacedLines) { r ->
+                    "_n" + Random(seedShifter + r.groupValues[1].toInt()).nextULong()
+                }
+
+                namesReplacedLines
             }
 
             macros += Macro(name, args, replaceFn)
-
             ""
         }
 

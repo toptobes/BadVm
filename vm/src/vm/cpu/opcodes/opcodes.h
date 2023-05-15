@@ -8,13 +8,13 @@
 #ifdef CPU_DEBUG_DUMP_ALL
     extern char* opcode_name_lookup[256];
 
-    #define ASSIGN_OPCODE(name, function) do {  \
-        cpu->opcodes[name] = function;          \
+    #define ASSIGN_OPCODE(name) do {  \
+        cpu->opcodes[name] = name##_impl;          \
         opcode_name_lookup[name] = #name;       \
     } while (0)
 #else
-    #define ASSIGN_OPCODE(name, function) \
-        (cpu->opcodes[name] = function)
+    #define ASSIGN_OPCODE(name) \
+        (cpu->opcodes[name] = name##_impl)
 #endif
 
 typedef enum {

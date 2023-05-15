@@ -42,14 +42,10 @@ class Context(initialState: OkayParseState<*>) {
             def.address = state.vars.nextAddress
         }
 
-        if (def is Label) {
-            def.address = state.vars.nextAddress
-        }
-
         val nextMap = state.vars + (def.name to def)
         val nextAddress = (state.vars.nextAddress + when (def) {
             is Constant -> 0
-            is Label    -> 2
+            is Label    -> 0
             is Variable -> def.allocatedBytes.size
         }).toWord()
 

@@ -6,13 +6,13 @@ void stack_init(cpu_t *cpu, word start) {
 }
 
 void stack_push(cpu_t *cpu, word word) {
-    mmap_write_word(cpu->mmap, cpu_reg16(sp), word);
+    mmu_write_word(cpu->mmap, cpu_reg16(sp), word);
     cpu_reg16(sp) -= 2;
 }
 
 word stack_pop(cpu_t *cpu) {
     cpu_reg16(sp) += 2;
-    return mmap_read_word(cpu->mmap, cpu_reg16(sp));
+    return mmu_read_word(cpu->mmap, cpu_reg16(sp));
 }
 
 void stack_push_frame(cpu_t *cpu) {

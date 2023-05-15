@@ -25,7 +25,7 @@ val wordArray: Parser<ByteArray> get() = contextual {
         singleWord,
     ) orFail "Not a word array"
 
-    val moreBytes = ctx.parse(-str(",")) {
+    val moreBytes = ctx.parse(-(str(",") or str("++"))) {
         ctx parse -wordArray orCrash "Error parsing word[] after concat"
     } ?: ByteArray(0)
 

@@ -1,5 +1,5 @@
-#ifndef VM_MEMMAP_H
-#define VM_MEMMAP_H
+#ifndef VM_MMU_H
+#define VM_MMU_H
 
 #include <stdbool.h>
 #include "../types.h"
@@ -29,21 +29,23 @@ typedef struct {
 typedef struct {
     int num_devices;
     mm_mapping_t *mapping[MAX_DEVICES];
-} mem_map_t;
+} mmu_t;
 
-mem_map_t    *mem_map_new();
+mmu_t *mmu_new();
 mm_mapping_t *mm_mapping_new(mm_device_t*, size_t start, size_t end);
 
 #define mm_device_new(...) f_mm_device_new((struct mm_device_new_args) { __VA_ARGS__ })
 struct mm_device_new_args { void* raw_device; byte_reader br; word_reader wr; byte_writer bw; word_writer ww; };
-mm_device_t  *f_mm_device_new(struct mm_device_new_args);
+mm_device_t *f_mm_device_new(struct mm_device_new_args);
 
-void mmap_add(mem_map_t*, mm_mapping_t*);
-void mmap_rem(mem_map_t*, mm_mapping_t*);
+void mmu_add(mmu_t*, mm_mapping_t*);
+void mmu_rem(mmu_t*, mm_mapping_t*);
 
-byte mmap_read_byte(mem_map_t*, int pos);
-word mmap_read_word(mem_map_t*, int pos);
-void mmap_write_byte(mem_map_t*, int pos, byte b);
-void mmap_write_word(mem_map_t*, int pos, word w);
+byte mmu_read_byte(mmu_t*, int pos);
+word mmu_read_word(mmu_t*, int pos);
+void mmu_write_byte(mmu_t*, int pos, byte b);
+void mmu_write_word(mmu_t*, int pos, word w);
 
-#endif //VM_MEMMAP_H
+void *mmu_get_root_device(mmu_t*);
+
+#endif //VM_MMU_H

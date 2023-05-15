@@ -6,7 +6,7 @@
 
 typedef struct {
     cpu_t *cpu;
-    mem_map_t *mmap;
+    mmu_t *mmu;
 } vm_t;
 
 void vm_init(vm_t *vm, word mem_size);

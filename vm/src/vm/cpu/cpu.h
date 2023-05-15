@@ -2,7 +2,7 @@
 #define VM_CPU_H
 
 #include <stdio.h>
-#include "../memory/memmap.h"
+#include "../memory/mmu.h"
 
 #define NUM_REGISTERS 7
 #define STACK_START 0xff
@@ -19,7 +19,7 @@ typedef struct {
 } flags_t;
 
 typedef struct cpu_t {
-    mem_map_t *mmap;
+    mmu_t *mmap;
     word registers[NUM_REGISTERS];
     opcode_impl opcodes[256];
     flags_t flags;
@@ -40,7 +40,7 @@ typedef enum {
 } reg8_t;
 
 // -- GENERAL CPU STUFF --
-cpu_t *cpu_new(mem_map_t *mmap);
+cpu_t *cpu_new(mmu_t *mmap);
 
 void cpu_step(cpu_t *cpu);
 word cpu_run(cpu_t *cpu);
@@ -55,8 +55,8 @@ void stack_push_frame(cpu_t *cpu);
 word stack_pop_frame(cpu_t *cpu);
 
 // -- UTILS --
-#define cpu_read_byte() (mmap_read_byte(cpu->mmap, cpu->registers[ip]++))
-#define cpu_read_word() (cpu->registers[ip] += 2, mmap_read_word(cpu->mmap, cpu->registers[ip] - 2))
+#define cpu_read_byte() (mmu_read_byte(cpu->mmap, cpu->registers[ip]++))
+#define cpu_read_word() (cpu->registers[ip] += 2, mmu_read_word(cpu->mmap, cpu->registers[ip] - 2))
 
 #define high_byte(reg) (reg * 2 + 1)
 #define low_byte(reg) (reg * 2)

@@ -4,7 +4,7 @@
 #include "cpu.h"
 #include "../debug.h"
 
-cpu_t *cpu_new(mem_map_t *mmap){
+cpu_t *cpu_new(mmu_t *mmap){
     cpu_t *cpu = malloc(sizeof *cpu);
 
     flags_t flags = { 0 };

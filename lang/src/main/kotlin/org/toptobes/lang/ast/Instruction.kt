@@ -13,7 +13,7 @@ data class Instruction(
 }
 
 fun Instruction.getTag(): String {
-    val mnemonic = mnemonic.uppercase()
+    val mnemonic = mnemonic
 
     val args = operands
         .reversed()

@@ -13,8 +13,8 @@ import org.toptobes.parsercombinator.unaryMinus
 
 val labelDefinition = contextual {
     val name = ctx parse -strOf(identifier, ":") orFail "Not a label"
-    ctx addVar Label(name.trimEnd(':'))
-    succeed(DeleteThisNode)
+    val label = Label(name.trimEnd(':'))
+    succeed(label)
 }
 
 val variableDefinition = contextual {
@@ -27,7 +27,7 @@ val variableDefinition = contextual {
 
     val (bytes, interpretation) = ctx parse when (type) {
         "byte", "db" -> byteConstructor(allocType)
-        "word", "dw" -> wordConstructor(allocType)
+        "word", "dw", "addr" -> wordConstructor(allocType)
         else -> typeConstructor(name, type, allocType)
     } orCrash "Error parsing $name's initializer"
 

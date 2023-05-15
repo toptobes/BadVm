@@ -20,6 +20,6 @@ OPCODE_IMPL(cmp_imm16_reg16) {
 }
 
 void init_test_opcodes(struct cpu_t *cpu) {
-    ASSIGN_OPCODE(cmp_reg16_reg16, cmp_reg16_reg16_impl);
-    ASSIGN_OPCODE(cmp_imm16_reg16, cmp_imm16_reg16_impl);
+    ASSIGN_OPCODE(cmp_reg16_reg16);
+    ASSIGN_OPCODE(cmp_imm16_reg16);
 }

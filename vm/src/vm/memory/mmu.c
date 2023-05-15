@@ -1,9 +1,9 @@
 #include <malloc.h>
 #include <string.h>
-#include "memmap.h"
+#include "mmu.h"
 
-mem_map_t* mem_map_new() {
-    mem_map_t *map = malloc(sizeof *map);
+mmu_t* mmu_new() {
+    mmu_t *map = malloc(sizeof *map);
     map->num_devices = 0;
     return map;
 }
@@ -32,7 +32,7 @@ mm_device_t *f_mm_device_new(struct mm_device_new_args args) {
     return device;
 }
 
-void mmap_add(mem_map_t* map, mm_mapping_t *mapping) {
+void mmu_add(mmu_t* map, mm_mapping_t *mapping) {
     size_t num_bytes = sizeof(mm_mapping_t *) * map->num_devices;
 
     memmove(map->mapping + 1, map->mapping, num_bytes);
@@ -41,7 +41,7 @@ void mmap_add(mem_map_t* map, mm_mapping_t *mapping) {
     map->num_devices++;
 }
 
-void mmap_rem(mem_map_t* map, mm_mapping_t *mapping) {
+void mmu_rem(mmu_t* map, mm_mapping_t *mapping) {
     for (int i = 0; i < map->num_devices; i++) {
         if (map->mapping[i] != mapping)
             continue;
@@ -54,33 +54,37 @@ void mmap_rem(mem_map_t* map, mm_mapping_t *mapping) {
     }
 }
 
-static mm_mapping_t * get_mapping_at(mem_map_t* map, int pos);
+static mm_mapping_t * get_mapping_at(mmu_t* map, int pos);
 
-byte mmap_read_byte(mem_map_t* map, int pos) {
+byte mmu_read_byte(mmu_t* map, int pos) {
     mm_mapping_t *mapping = get_mapping_at(map, pos);
     return mapping->device->byte_reader(mapping->device->raw_device, pos);
 }
 
-word mmap_read_word(mem_map_t* map, int pos) {
+word mmu_read_word(mmu_t* map, int pos) {
     mm_mapping_t *mapping = get_mapping_at(map, pos);
     return mapping->device->word_reader(mapping->device->raw_device, pos);
 }
 
-void mmap_write_byte(mem_map_t* map, int pos, byte byte) {
+void mmu_write_byte(mmu_t* map, int pos, byte byte) {
     mm_mapping_t *mapping = get_mapping_at(map, pos);
     mapping->device->byte_writer(mapping->device->raw_device, pos, byte);
 }
 
-void mmap_write_word(mem_map_t* map, int pos, word word) {
+void mmu_write_word(mmu_t* map, int pos, word word) {
     mm_mapping_t *mapping = get_mapping_at(map, pos);
     mapping->device->word_writer(mapping->device->raw_device, pos, word);
 }
 
-static mm_mapping_t* get_mapping_at(mem_map_t* map, int pos) {
+static mm_mapping_t* get_mapping_at(mmu_t* map, int pos) {
     for (int i = 0; i < map->num_devices; i++) {
         if (map->mapping[i]->start <= pos && pos <= map->mapping[i]->end) {
             return map->mapping[i];
         }
     }
-    return NULL; // Should never happen since mmap is the base mapping & takes the entire range
+    return NULL; // Should never happen since mmu is the base mapping & takes the entire range
+}
+
+void *mmu_get_root_device(mmu_t* mmu) {
+    return mmu->mapping[mmu->num_devices - 1]->device->raw_device;
 }

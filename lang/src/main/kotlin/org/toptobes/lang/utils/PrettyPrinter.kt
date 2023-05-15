@@ -52,8 +52,8 @@ private fun Instruction.instructionPrettyString(): String {
 
 private fun Symbol.symbolPrettyString() = when (this) {
     is Constant -> "{ name: $name, bytes: ${bytes.contentToString()} }"
-    is Label    -> "{ name: $name, addr: $address }"
-    is Variable -> "{ name: $name, addr: $address, bytes: ${allocatedBytes.contentToString()} }"
+    is Label    -> "{ label: $name }"
+    is Variable -> "{ name: $name, addr: $address, allocBytes: ${allocatedBytes.contentToString()} }"
 }
 
 private fun Operand.operandPrettyString() = when (this) {
@@ -64,6 +64,7 @@ private fun Operand.operandPrettyString() = when (this) {
     is Reg16  -> "{ op: $operandAssociation, val: $regName }"
     is Reg8   -> "{ op: $operandAssociation, val: $regName }"
     is RegPtr -> "{ op: $operandAssociation, val: $regName }"
+    is Lbl    -> "{ op: $operandAssociation }"
 }
 
 private fun List<*>.astPrettyString(): String = this

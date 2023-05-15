@@ -16,10 +16,24 @@ fun ByteArray.toWord(): Word {
     return (high + low).toWord()
 }
 
+fun Byte.toBytes(): ByteArray {
+    return byteArrayOf(this)
+}
+
+fun Byte.toBytesList(): List<Byte> {
+    return listOf(this)
+}
+
 fun Number.toBytes(): ByteArray {
     val high = (this.toInt() shr 8).toByte()
     val low  = this.toByte()
     return byteArrayOf(high, low)
+}
+
+fun Number.toBytesList(): List<Byte> {
+    val high = (this.toInt() shr 8).toByte()
+    val low  = this.toByte()
+    return listOf(high, low)
 }
 
 fun WordArray.toBytes() = ByteArray(size * 2).also {

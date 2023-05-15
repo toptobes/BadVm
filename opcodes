@@ -1,4 +1,4 @@
-stop,
+halt,
 
 mov_reg16_reg16,
 mov_imm16_reg16,

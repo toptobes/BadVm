@@ -1,11 +1,9 @@
 package org.toptobes.parsercombinator
 
-import org.toptobes.lang.ast.DeleteThisNode
 import org.toptobes.lang.ast.Interpretation
 import org.toptobes.lang.ast.Symbol
 import org.toptobes.lang.ast.TypeInterpretation
 import org.toptobes.lang.utils.Word
-import org.toptobes.lang.utils.toWord
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 
@@ -57,11 +55,9 @@ inline fun <R, R2> ParseState<R>.ifOkay(block: OkayParseState<R>.() -> R2): R2? 
     return if (this.isOkay()) block(this) else null
 }
 
-const val RESERVED_MEM_SIZE: Word = 2
-
 @Suppress("FunctionName", "UNCHECKED_CAST")
-fun <R> UnitParseState(target: String): OkayParseState<R> {
-    return OkayParseState(null as R, emptyMap(), VarMap(emptyMap(), RESERVED_MEM_SIZE), emptyMap(), target, 0)
+fun <R> UnitParseState(target: String, vars: VarMap): OkayParseState<R> {
+    return OkayParseState(null as R, emptyMap(), vars, emptyMap(), target, 0)
 }
 
 fun <R> errored(state: ParseState<*>, error: String): ParseState<R> {
