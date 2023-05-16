@@ -10,10 +10,9 @@ import org.toptobes.lang.utils.toWord
 import org.toptobes.parsercombinator.*
 import org.toptobes.parsercombinator.impls.*
 
-val identifier = sequence(
-    regex("[_a-zA-Z]"),
-    regex("\\w*") withDefault "",
-).map { it[0] + it[1] }
+val identifierRegex = "[_a-zA-Z]\\w*"
+
+val identifier = regex(identifierRegex)
 
 private val hexadecimal = any(
     regex("0x([a-fA-F0-9]+)", 1),

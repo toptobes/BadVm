@@ -54,14 +54,6 @@ class Context(initialState: OkayParseState<*>) {
         state = state.copy(symbols = state.symbols + type)
     }
 
-    fun addLabel(label: Label) {
-        state = state.copy(symbols = state.symbols + label)
-    }
-
-    fun addMacro(macro: Macro) {
-        state = state.copy(symbols = state.symbols + macro)
-    }
-
     inline fun <reified T> lookup(name: String): T? {
         return state.symbols[name] as? T
     }

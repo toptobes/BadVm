@@ -23,16 +23,14 @@ fun main() {
           | mov reg, &RandName(1)
           | mov @<word ptr PRINTER>, reg
         
-        imm word answer = 16
-        
-        type Word =
-          | word word
-        
-        Word myWord = Word{0}
+        type Word =| word word
+        Word myWord = Word { 0 }
         
         _start:
+            mov <Word ptr cx>.word, ax
+        
             PrintLn(cx, str: "Guess a number in 1..100")
-            mov dx, answer
+            mov dx, 16
             
             LoopHead:
                 mov cx, @<word ptr READER>

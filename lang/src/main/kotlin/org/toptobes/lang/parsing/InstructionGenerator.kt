@@ -55,30 +55,25 @@ val instructions = File("../opcodes")
     .mapValues { (_, variations) -> variations.sortedByDescending { it.numArgs } }
 
 private val movPtrTypeParser = contextual {
-    ctx parse -str("mov") orCrash "Not an instruction"
+    val (typeName, reg1, fields, reg2) = """
+        mov <type ptr reg1>.fields, reg2
+        -) 'mov'            crash: Not an instruction
+        -) '<'              fail:  Not a cast
+        *) \name            crash: Cast missing type
+        -) 'ptr'            crash: Cast isn't casting to ptr
+        *) \name            crash: Cast missing register
+        -) '>'              crash: Cast missing >
+        -) '.'              crash: Missing fields
+        *) \fields          crash: Error parsing fields
+        -) ','              crash: Missing comma
+        *) \name            crash: Missing 2nd register
+    """.compilePc()(ctx)
 
-    ctx parse -str("<") orFail "Not a cast"
-    val typeName = ctx parse -identifier orCrash "Cast missing type"
-    ctx parse str("ptr") orCrash "Cast missing ptr"
-    val reg = ctx parse -identifier orCrash "Cast missing register"
-    ctx parse -str(">") orCrash "Cast missing >"
+    val type = ctx.lookup<TypeIntrp>(typeName)!!
 
-    val type = ctx.lookup<TypeIntrp>(typeName) ?: crash("$typeName is not a valid type")
+    val offset = getFieldOrTypeOffset(fields.split(","), type)
 
-    ctx parse -str(".") orCrash "Missing identifier"
-    val names = ctx parse -sepByPeriods(-identifier, requireMatch = true) orCrash "Missing identifier"
-
-    if (reg !in reg16Codes.keys) {
-        crash("$reg]} is not a valid register")
-    }
-
-    val offset = getFieldOrTypeOffset(names, type)
-
-    ctx parse -str(",") orCrash "Missing comma"
-
-    val reg2 = ctx parse reg16 orCrash "Error parsing 2nd register"
-
-    succeed(Instruction("mov", listOf(reg2, RegPtr(reg), Imm16(offset.toWord()))))
+    succeed(Instruction("mov", listOf(Reg16(reg2), RegPtr(reg1), Imm16(offset.toWord()))))
 }
 
 val instructionParsers = instructions

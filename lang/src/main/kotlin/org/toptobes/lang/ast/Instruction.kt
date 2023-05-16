@@ -8,6 +8,7 @@ data class Instruction(
 ) : AstNode {
     val metadata = getTag()
         .let { tag ->
+//            println(tag)
             instructions[mnemonic]!!.first { it.tag == tag }
         }
 }

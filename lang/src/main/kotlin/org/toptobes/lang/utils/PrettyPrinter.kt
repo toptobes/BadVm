@@ -12,7 +12,7 @@ fun Any.prettyString() = when (this) {
     is Instruction -> instructionPrettyString()
     is Symbol -> symbolPrettyString()
     is Operand -> operandPrettyString()
-    else -> TODO("${this::class.simpleName} is not yet supported for prettifying")
+    else -> toString()
 }
 
 private fun OkayParseState<*>.okayParseStatePrettyString() = """

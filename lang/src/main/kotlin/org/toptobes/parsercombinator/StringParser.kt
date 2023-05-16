@@ -44,9 +44,9 @@ class Parser<out R>(val parse: (OkayParseState<*>) -> ParseState<R>) {
         return@Parser generator(nextState.result).parsePropagating(nextState)
     }
 
-    fun require(msg: String = "", crashing: Boolean = false, predicate: (R) -> Boolean) = flatMap {
+    fun require(msg: (R) -> String = { "" }, crashing: Boolean = false, predicate: (R) -> Boolean) = flatMap {
         if (!predicate(it)) {
-            return@flatMap if (crashing) crash(msg) else fail(msg)
+            return@flatMap if (crashing) crash(msg(it)) else fail(msg(it))
         }
         return@flatMap succeed(it)
     }

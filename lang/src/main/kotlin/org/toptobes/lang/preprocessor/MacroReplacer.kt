@@ -1,15 +1,26 @@
 package org.toptobes.lang.preprocessor
 
 import org.toptobes.lang.ast.Macro
+import org.toptobes.lang.parsing.identifierRegex
 import kotlin.random.Random
 import kotlin.random.nextULong
 
+/**
+ * The macro regex matches a macro of the format
+ * ```
+ * (export)? macro <Name> <arg1> <argN> =
+ *  | <line1>
+ *  | <lineN>
+ * ```
+ * Macros can use `RandName(seed)` to get a unique random
+ * name every time it's called, which can always be referenced
+ * by the same seed. Different calls have different seed shifters
+ * so it's never the same (well at least in practice)
+ */
 fun findMacros(str: String): Pair<String, MutableList<Macro>> {
-    val identifier = "[_a-zA-Z]\\w*"
-
     val macros = mutableListOf<Macro>()
 
-    val newStr = Regex("macro\\s+($identifier)\\s+((?:$identifier\\s+)*)\\s*=((?:\\s*\\|\\s*.*[^|\n])*)")
+    val newStr = Regex("macro\\s+($identifierRegex)\\s+((?:$identifierRegex\\s+)*)\\s*=((?:\\s*\\|\\s*.*[^|\n])*)")
         .replace(str) {
             val name = it.groupValues[1]
 

@@ -45,23 +45,23 @@ sealed interface RegisterOperand : Operand {
 }
 
 data class Reg16(val regName: String) : RegisterOperand {
-    override val code = reg16Codes[regName] ?: throwInvalidRegister(regName)
+    override val code = reg16Codes[regName] ?: throwInvalidRegister(regName, "reg16")
     override val operandAssociation = "reg16"
     override val bytes get() = code.toBytes()
 }
 
 data class Reg8(val regName: String) : RegisterOperand {
-    override val code = reg8Codes[regName] ?: throwInvalidRegister(regName)
+    override val code = reg8Codes[regName] ?: throwInvalidRegister(regName, "reg8")
     override val operandAssociation = "reg8"
     override val bytes get() = code.toBytes()
 }
 
 data class RegPtr(val regName: String) : RegisterOperand {
-    override val code = reg16Codes[regName] ?: throwInvalidRegister(regName)
+    override val code = reg16Codes[regName] ?: throwInvalidRegister(regName, "reg16")
     override val operandAssociation = "ptr"
     override val bytes get() = code.toBytes()
 }
 
-private fun throwInvalidRegister(regName: String): Nothing {
-    throw IllegalArgumentException("Invalid register $regName")
+private fun throwInvalidRegister(regName: String, regType: String): Nothing {
+    throw IllegalArgumentException("$regName is not a value $regType")
 }
