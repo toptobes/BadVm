@@ -7,7 +7,6 @@ import org.toptobes.lang.utils.*
 import org.toptobes.parsercombinator.ParsingException
 import org.toptobes.parsercombinator.contextual
 import org.toptobes.parsercombinator.impls.*
-import org.toptobes.parsercombinator.or
 import org.toptobes.parsercombinator.unaryMinus
 
 val mem = contextual {
@@ -19,49 +18,38 @@ val mem = contextual {
 val label = contextual {
     val name = ctx parse identifier orFail "Not a label usage"
     ctx parse whitespace orFail "Not a label usage"
-    val symbol = ctx.state.vars[name]
-
-    println(symbol)
-
-    if (symbol !is Label) {
-        fail("$name is not a label")
-    }
-
+    val symbol = ctx.lookup<Label>(name) orFail "$name is not a label"
     succeed(symbol)
 }
 
 val addr = contextual {
     ctx parse str("&") orFail "Not byte embedding"
 
-    val (names, symbol, interpretation) = ctx parse initialSymbolAndFields orCrash "Error parsing fields for addr"
+    val (variable, names) = ctx parse variableAndFields orCrash "Error parsing fields for addr"
 
-    if (symbol !is Variable) {
+    if (variable.intrp !is Ptr) {
         crash("Trying to get addr of non-var")
     }
-    interpretation as Ptr
 
-    val addr = when (interpretation.interpretation) {
-        is TypeInterpretation -> symbol.address + getFieldOrTypeOffset(names.drop(1), interpretation.interpretation)
-        else -> symbol.address
+    val addr = when (variable.intrp.intrp) {
+        is TypeIntrp -> variable.bytes.toWord() + getFieldOrTypeOffset(names, variable.intrp.intrp)
+        else -> variable.bytes.toWord()
     }.toBytes()
+
     succeed(addr)
 }
 
-fun embeddedBytes(size: IntRange = 0..Int.MAX_VALUE, requireEven: Boolean = false) = contextual {
+fun embeddedBytes(size: IntRange = 0..Word.MAX_VALUE, requireEven: Boolean = false) = contextual {
     ctx parse str("...") orFail "Not byte embedding"
 
-    val (names, symbol, interpretation) = ctx parse initialSymbolAndFields orCrash "Error parsing fields for embedded bytes"
+    val (variable, names) = ctx parse variableAndFields orCrash "Error parsing fields for embedded bytes"
 
-    if (symbol !is Constant) {
-        crash("Trying to spread non-const")
-    }
-
-    val bytes = when (interpretation) {
-        is ByteInterpretation -> symbol.bytes
-        is WordInterpretation -> symbol.bytes
-        is TypeInterpretation -> bytesAtField(names, interpretation, symbol.bytes, size)
-        is Vec -> symbol.bytes
-        else -> crash("Illegal spread")
+    val bytes = when (variable.intrp) {
+        is TypeIntrp -> {
+            val field = getField(names, variable.intrp)
+            variable.bytes.copyFromPlus(field.offset, field.size)
+        }
+        else ->  variable.bytes
     }
 
     if (requireEven && bytes.size % 2 != 0) {
@@ -76,16 +64,15 @@ fun embeddedBytes(size: IntRange = 0..Int.MAX_VALUE, requireEven: Boolean = fals
 }
 
 fun const(size: Int) = contextual {
-    val (names, symbol, interpretation) = ctx parse initialSymbolAndFields orFail "Error parsing fields for const"
+    val (variable, names) = ctx parse variableAndFields orFail "Error parsing fields for const"
 
-    if (symbol !is Constant) {
-        fail("Non-const")
-    }
-
-    val bytes = when (interpretation) {
-        is ByteInterpretation -> symbol.bytes
-        is WordInterpretation -> symbol.bytes
-        is TypeInterpretation -> bytesAtField(names, interpretation, symbol.bytes, 1..2)
+    val bytes = when (variable.intrp) {
+        is ByteIntrp -> variable.bytes
+        is WordIntrp -> variable.bytes
+        is TypeIntrp -> {
+            val field = getField(names, variable.intrp)
+            variable.bytes.copyFromPlus(field.offset, field.size)
+        }
         else -> crash("Illegal const usage")
     }
 
@@ -97,85 +84,73 @@ fun const(size: Int) = contextual {
 }
 
 private val constPtr = contextual {
-    ctx parse -str("<") orFail "Not a const ptr"
-    val interpretation = ctx parse (str("word") or str("byte")) orCrash "Missing ptr type (word | byte)"
-    ctx parse -str(">") orCrash "Const ptr cast missing >"
+    val ptrIntrp = ctx parse castStart orFail "No cast"
 
-    val ptrInterpretation = Ptr(if (interpretation == "byte") ByteInterpretation else WordInterpretation)
+    if (ptrIntrp !is Ptr) {
+        crash("Expected ptr, got ${ptrIntrp.prettyString()}")
+    }
 
     ctx.parse(word) {
-        succeed(ptrInterpretation to it.toBytes())
+        ctx parse -str(">") orCrash "Cast missing >"
+        succeed(ptrIntrp to it.toBytes())
     }
 
-    val (names, symbol, symbolInterpretation) = ctx parse initialSymbolAndFields orCrash "Error parsing fields for const ptr"
+    val (variable, names) = ctx parse variableAndFields orCrash "Error parsing fields for const ptr"
 
-    if (symbol !is Constant) {
-        crash("Identifier is not a constant")
+    ctx parse -str(">") orCrash "Cast missing >"
+
+    val addr = when (variable.intrp) {
+        is TypeIntrp -> variable.bytes.copyFromPlus(getFieldOrTypeOffset(names, variable.intrp), 2)
+        is WordIntrp -> variable.bytes
+        else -> crash("Can not cast non-word-sized const to ptr")
     }
 
-    val bytes = when (symbolInterpretation) {
-        is WordInterpretation -> symbol.bytes
-        is TypeInterpretation -> bytesAtField(names, symbolInterpretation, symbol.bytes, 2..2)
-        else -> crash("Illegal deref of ${symbolInterpretation.prettyString()}")
-    }
-
-    succeed(ptrInterpretation to bytes)
+    succeed(addOffsetToAddr(addr, ptrIntrp, names))
 }
 
 private val varPtr = contextual {
-    val (names, symbol, interpretation) = ctx parse initialSymbolAndFields orCrash "Error parsing fields for var ptr"
-
-    if (symbol !is Variable) {
-        crash(if (symbol is Label) "Can't deref label" else "Use @{(word|byte) ptr ...} syntax instead")
-    }
-
-    interpretation as Ptr
-
-    val (addrIntrp, addr) = when (interpretation.interpretation) {
-        is TypeInterpretation -> getAddrAtOffset(names.drop(1), interpretation.interpretation, symbol.address)
-        else -> interpretation.interpretation to symbol.address.toBytes()
-    }
-
-    succeed(Ptr(addrIntrp) to addr)
+    val (variable, names) = ctx parse variableAndFields orCrash "Error parsing name/fields for var ptr"
+    succeed(addOffsetToAddr(variable.bytes, variable.intrp as Ptr, names))
 }
 
-private fun bytesAtField(names: List<String>, type: TypeInterpretation, bytes: ByteArray, size: IntRange): ByteArray {
-    val field = getField(names.drop(1), type)
+private fun addOffsetToAddr(currentAddr: ByteArray, ptr: Ptr, names: List<String>): Pair<Ptr, ByteArray> {
+    val ptrInterpretation = ptr.intrp
 
-    if (field.size !in size) {
-        crash("Expected field size $size, got ${field.size}")
+    val (addrIntrp, addr) = when (ptrInterpretation) {
+        is TypeIntrp -> getAddrAtOffset(names, ptrInterpretation, currentAddr.toWord())
+        else -> ptrInterpretation to currentAddr
     }
 
-    return bytes.copyOfRange(field.offset, field.offset + field.size)
+    return Ptr(addrIntrp) to addr
 }
 
-private fun getAddrAtOffset(names: List<String>, type: TypeInterpretation, addr: Word): Pair<Interpretation, ByteArray> {
+private fun getAddrAtOffset(names: List<String>, type: TypeIntrp, addr: Word): Pair<Interpretation, ByteArray> {
     val field = getField(names, type)
-    return field.interpretation to (addr + field.offset).toBytes()
+    return field.intrp to (addr + field.offset).toBytes()
 }
 
-private fun getField(names: List<String>, type: TypeInterpretation): Field<*> {
+private fun getField(names: List<String>, type: TypeIntrp): Field<*> {
     val name = names.firstOrNull()
-        ?: throw ParsingException("Can not resolve type field; field chain ends @ type ${type.typeName}")
+        ?: throw ParsingException("Can not resolve type field; field chain ends @ type ${type.name}")
 
     val field = type.fields[name]
-        ?: throw ParsingException("$name is an invalid field for type ${type.typeName}")
+        ?: throw ParsingException("$name is an invalid field for type ${type.name}")
 
-    return when (field.interpretation) {
-        is TypeInterpretation -> getField(names.drop(1), type)
+    return when (field.intrp) {
+        is TypeIntrp -> getField(names.drop(1), type)
         else -> field
     }
 }
 
-fun getFieldOrTypeOffset(names: List<String>, type: TypeInterpretation): Int {
+fun getFieldOrTypeOffset(names: List<String>, type: TypeIntrp): Int {
     val name = names.firstOrNull()
         ?: return 0
 
     val field = type.fields[name]
-        ?: throw ParsingException("$name is an invalid field for type ${type.typeName}")
+        ?: throw ParsingException("$name is an invalid field for type ${type.name}")
 
-    return when (field.interpretation) {
-        is TypeInterpretation -> {
+    return when (field.intrp) {
+        is TypeIntrp -> {
             val offset = getFieldOrTypeOffset(names.drop(1), type)
             if (offset == 0) field.offset else offset
         }
@@ -183,11 +158,13 @@ fun getFieldOrTypeOffset(names: List<String>, type: TypeInterpretation): Int {
     }
 }
 
-private val initialSymbolAndFields = contextual {
+private val variableAndFields = contextual {
     val names = ctx parse -sepByPeriods(-identifier, requireMatch = true) orFail "Missing identifier"
 
-    val symbol = ctx.state.vars[names[0]] ?: crash("${names[0]} is an invalid symbol")
-    val interpretation = ctx.state.assumptions[names[0]]!!
+    val variable = ctx.lookup<Variable>(names[0]) ?: crash("${names[0]} is an invalid symbol")
+    succeed(variable to names.drop(1))
+}
 
-    succeed(Triple(names, symbol, interpretation))
+private fun ByteArray.copyFromPlus(from: Int, plus: Int): ByteArray {
+    return copyOfRange(from, from + plus)
 }

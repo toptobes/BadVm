@@ -18,8 +18,8 @@ fun Any.prettyString() = when (this) {
 private fun OkayParseState<*>.okayParseStatePrettyString() = """
     {
         "result": ${(result as List<*>).astPrettyString()},
-        "types": ${types.mapPrettyString()},
-        "vars": ${vars.mapPrettyString()},
+        "symbols": ${symbols.mapPrettyString()},
+        "allocated": ${allocations.contentToString()},
         "index": $index
     }
 """.trimIndent()
@@ -32,28 +32,29 @@ private fun ErroredParseState.errorParseStatePrettyString() = """
 """
 
 private fun Interpretation.interpretationPrettyString(): String = when (this) {
-    is ByteInterpretation -> "byte"
-    is WordInterpretation -> "word"
-    is Ptr -> "ptr<${interpretation.prettyString()}>"
-    is Vec -> "vec<${interpretation.prettyString()}>"
-    is TypeInterpretation -> """
-        { name: $typeName, fields: ${fields.values.map(Field<*>::fieldPrettyString)} }
+    is ByteIntrp -> "byte"
+    is WordIntrp -> "word"
+    is Ptr -> "ptr<${intrp.prettyString()}>"
+    is Vec -> "vec<${intrp.prettyString()}>"
+    is TypeIntrp -> """
+        { name: $name, fields: ${fields.values.map(Field<*>::fieldPrettyString)} }
     """.trimIndent()
 }
 
-private fun Field<*>.fieldPrettyString(): String = when (interpretation) {
-    is TypeInterpretation -> "${interpretation.typeName} $name"
-    else -> "${interpretation.prettyString()} $name"
+private fun Field<*>.fieldPrettyString(): String = when (intrp) {
+    is TypeIntrp -> "${intrp.name} $name"
+    else -> "${intrp.prettyString()} $name"
 }
 
 private fun Instruction.instructionPrettyString(): String {
     return "{ $mnemonic: ${operands.map(Any::prettyString)} }"
 }
 
-private fun Symbol.symbolPrettyString() = when (this) {
-    is Constant -> "{ name: $name, bytes: ${bytes.contentToString()} }"
+private fun Symbol.symbolPrettyString(): String = when (this) {
     is Label    -> "{ label: $name }"
-    is Variable -> "{ name: $name, addr: $address, allocBytes: ${allocatedBytes.contentToString()} }"
+    is Variable -> "{ name: $name, bytes: ${bytes.contentToString()}, intrp: ${intrp.prettyString()} }"
+    is Macro -> "{ name: $name }"
+    is TypeIntrp -> interpretationPrettyString()
 }
 
 private fun Operand.operandPrettyString() = when (this) {

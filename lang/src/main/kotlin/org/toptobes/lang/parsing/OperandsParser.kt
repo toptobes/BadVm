@@ -17,8 +17,8 @@ val ptr   = betweenSquareBrackets(reg16.map { RegPtr(it.regName) })
 val imm16 = singleWord..{ it.toWord() }..(::Imm16)
 val imm8  = singleByte..{ it[0] }..(::Imm8)
 
-val mem16 = mem.require { it.first.interpretation == WordInterpretation }..{ it.second.toWord() }..(::Mem16)
-val mem8  = mem.require { it.first.interpretation == ByteInterpretation }..{ it.second.toWord() }..(::Mem8)
+val mem16 = mem.require { it.first.intrp == WordIntrp }..{ it.second.toWord() }..(::Mem16)
+val mem8  = mem.require { it.first.intrp == ByteIntrp }..{ it.second.toWord() }..(::Mem8)
 
 private val lbl = -label..{ Lbl(it.name) }
 

@@ -11,17 +11,8 @@ import org.toptobes.parsercombinator.impls.betweenCurlyBrackets
 import org.toptobes.parsercombinator.impls.str
 import org.toptobes.parsercombinator.impls.strOf
 
-//fun typeConstructor(name: String) = contextual {
-//    ctx.parse(embeddedBytes())
-//
-//    val typeName = ctx parse identifier orFail "Not a type constructor"
-//    val bytes = ctx parse typeConstructor(typeName, name) orCrash "Error parsing type constructor"
-//    val type = ctx.state.types[typeName]!!
-//    succeed(bytes to type)
-//}
-
 fun typeConstructor(name: String, typeName: String) = contextual {
-    val type = ctx.state.types[typeName] ?: fail("$typeName is not a type")
+    val type = ctx.lookup<TypeIntrp>(typeName) ?: fail()
     type.ensureIsConcrete()
 
     ctx.parse(embeddedBytes(type.size..type.size)) {
@@ -38,7 +29,7 @@ fun typeConstructor(name: String, typeName: String) = contextual {
 }
 
 @Suppress("UNCHECKED_CAST")
-private fun parseConstructorArgs(type: TypeInterpretation, name: String) = contextual {
+private fun parseConstructorArgs(type: TypeIntrp, name: String) = contextual {
     type.ensureIsConcrete()
 
     var values = byteArrayOf()
@@ -64,21 +55,21 @@ private fun parseConstructorArgs(type: TypeInterpretation, name: String) = conte
             values += bytes
         } else {
             val nextField = if (isNamedConstructor) {
-                ctx parse nextNamedTypeConstructorField(type, fields) orCrash "Error parsing (named) field in ${type.typeName} constructor"
+                ctx parse nextNamedTypeConstructorField(type, fields) orCrash "Error parsing (named) field in ${type.name} constructor"
             } else {
-                ctx parse nextUnnamedTypeConstructorField(fields) orCrash "Error parsing (unnamed) field in ${type.typeName} constructor"
+                ctx parse nextUnnamedTypeConstructorField(fields) orCrash "Error parsing (unnamed) field in ${type.name} constructor"
             }
 
-            values += when (nextField.interpretation) {
-                is ByteInterpretation -> byteField()
-                is WordInterpretation -> wordField()
-                is TypeInterpretation -> nestedTypeField(nextField as Field<TypeInterpretation>, name)
+            values += when (nextField.intrp) {
+                is ByteIntrp -> byteField()
+                is WordIntrp -> wordField()
+                is TypeIntrp -> nestedTypeField(nextField as Field<TypeIntrp>, name)
                 else -> TODO()
             }
         }
 
         if (fields.isNotEmpty()) {
-            ctx parse -str(',') orCrash "'${type.typeName}' constructor missing comma"
+            ctx parse -str(',') orCrash "'${type.name}' constructor missing comma"
         }
     }
 
@@ -95,8 +86,8 @@ private fun ContextScope<*>.wordField(): ByteArray {
     return ctx parse -singleWord orCrash "Error parsing word constructor"
 }
 
-private fun ContextScope<*>.nestedTypeField(field: Field<TypeInterpretation>, name: String): ByteArray {
-    val typeName = field.interpretation.typeName
+private fun ContextScope<*>.nestedTypeField(field: Field<TypeIntrp>, name: String): ByteArray {
+    val typeName = field.intrp.name
     val type = ctx parse -typeConstructor(name + field.name, typeName) orCrash "Error parsing constructor for $typeName"
     return type.first
 }
@@ -109,14 +100,14 @@ private fun nextUnnamedTypeConstructorField(fields: MutableList<Field<*>>) = con
     succeed(field)
 }
 
-private fun nextNamedTypeConstructorField(type: TypeInterpretation, fields: MutableList<Field<*>>) = contextual { ctx ->
-    val fieldNameParser = -any(*fields.map { str(it.name) }.toTypedArray())
-    val fieldName = ctx parse fieldNameParser orCrash "Type constructor for '${type.typeName}' missing field(s)"
+private fun nextNamedTypeConstructorField(type: TypeIntrp, fields: MutableList<Field<*>>) = contextual { ctx ->
+    val fieldNameParser = -any(fields.map { str(it.name) })
+    val fieldName = ctx parse fieldNameParser orCrash "Type constructor for '${type.name}' missing field(s)"
     val fieldTypeIdx = fields.indexOfFirst { it.name == fieldName }
 
     val fieldType = fields[fieldTypeIdx]
     fields.removeAt(fieldTypeIdx)
 
-    (ctx parse -str(":")) orCrash "Named type constructor for '${type.typeName}' missing a :"
+    (ctx parse -str(":")) orCrash "Named type constructor for '${type.name}' missing a :"
     succeed(fieldType)
 }

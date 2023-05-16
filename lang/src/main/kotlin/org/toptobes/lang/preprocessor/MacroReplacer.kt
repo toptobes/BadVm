@@ -1,9 +1,8 @@
 package org.toptobes.lang.preprocessor
 
+import org.toptobes.lang.ast.Macro
 import kotlin.random.Random
 import kotlin.random.nextULong
-
-data class Macro(val name: String, val args: List<String>, val replaceFn: (List<String>) -> String)
 
 fun findMacros(str: String): Pair<String, MutableList<Macro>> {
     val identifier = "[_a-zA-Z]\\w*"
@@ -41,7 +40,7 @@ fun findMacros(str: String): Pair<String, MutableList<Macro>> {
                 namesReplacedLines
             }
 
-            macros += Macro(name, args, replaceFn)
+            macros += Macro(name, false, args, replaceFn)
             ""
         }
 

@@ -1,5 +1,9 @@
 package org.toptobes.lang.parsing
 
+import org.toptobes.lang.ast.ByteIntrp
+import org.toptobes.lang.ast.Interpretation
+import org.toptobes.lang.ast.Ptr
+import org.toptobes.lang.ast.WordIntrp
 import org.toptobes.lang.utils.UWord
 import org.toptobes.lang.utils.Word
 import org.toptobes.lang.utils.toWord
@@ -51,4 +55,22 @@ val byte = number
 
 fun <R> cStyleArrayOf(parser: Parser<R>): Parser<List<R>> {
     return betweenCurlyBrackets(sepByCommas(parser))
+}
+
+val castStart = contextual {
+    ctx parse -str("<") orFail "Not a cast"
+    val intrpName = ctx parse -identifier orCrash "Missing cast type"
+    val isPtr = ctx canParse str("ptr")
+
+    val intrp = when (intrpName) {
+        "word", "dw" -> WordIntrp
+        "byte", "db" -> ByteIntrp
+        else -> ctx.lookup<Interpretation>(intrpName) ?: crash("$intrpName is not a valid interpretation")
+    }
+
+    if (isPtr) {
+        succeed(Ptr(intrp))
+    } else {
+        succeed(intrp)
+    }
 }

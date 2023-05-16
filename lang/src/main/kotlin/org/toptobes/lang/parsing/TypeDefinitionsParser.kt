@@ -1,9 +1,6 @@
 package org.toptobes.lang.parsing
 
 import org.toptobes.lang.ast.*
-import org.toptobes.lang.utils.Word
-import org.toptobes.lang.utils.toWord
-import org.toptobes.lang.utils.zipMap
 import org.toptobes.parsercombinator.contextual
 import org.toptobes.parsercombinator.impls.any
 import org.toptobes.parsercombinator.impls.str
@@ -18,22 +15,24 @@ private val declaredType = contextual {
 
     val name = ctx parse -identifier orCrash "Error parsing declared type's identifier"
 
-    ctx addType TypeInterpretation(name, emptyMap())
+    ctx.addType(TypeIntrp(name, false, emptyMap()))
     succeed(DeleteThisNode)
 }
 
 private val definedType = contextual {
+    val isExport = ctx canParse -str("isExport")
+
     ctx parse -str("type") orFail  "Not a type definition"
 
     val name = ctx parse -identifier orCrash "Error parsing declared type's identifier"
 
-    ctx addType TypeInterpretation(name, emptyMap())
+    ctx.addType(TypeIntrp(name, isExport, emptyMap()))
 
     ctx parse -str("=")
 
     val fields = ctx parse fieldsParser orCrash "Error parsing declared type's fields"
 
-    ctx addType TypeInterpretation(name, fields.associateBy { it.name })
+    ctx.addType(TypeIntrp(name, isExport, fields.associateBy { it.name }))
     succeed(DeleteThisNode)
 }
 
@@ -68,29 +67,29 @@ private fun embeddedField(offset: Int) = contextual {
         crash("Can't embed a 'byte' field")
     }
 
-    val type = ctx.state.types[typeName] ?: crash("$typeName is not a type")
+    val type = ctx.lookup<TypeIntrp>(typeName) ?: crash("$typeName is not a type")
     type.ensureIsConcrete()
 
     succeed(type.adjustOffsets(offset).fields.values)
 }
 
 private fun normalField(offset: Int) = contextual {
-    val type = ctx parse -identifier orCrash "Error parsing type for field"
+    val typeName = ctx parse -identifier orCrash "Error parsing type for field"
     val name = ctx parse -identifier orCrash "Error parsing name for field"
 
-    val field = when (type) {
-        "byte", "db" -> Field(name, ByteInterpretation, offset)
-        "word", "dw" -> Field(name, WordInterpretation, offset)
+    val field = when (typeName) {
+        "byte", "db" -> Field(name, ByteIntrp, offset)
+        "word", "dw" -> Field(name, WordIntrp, offset)
         else -> {
-            val typeImpl = ctx.state.types[type] ?: fail("$type is not a type")
-            typeImpl.ensureIsConcrete()
-            Field(name, typeImpl.adjustOffsets(offset), offset)
+            val type = ctx.lookup<TypeIntrp>(typeName) ?: crash("$typeName is not a type")
+            type.ensureIsConcrete()
+            Field(name, type.adjustOffsets(offset), offset)
         }
     }
 
     succeed(listOf(field))
 }
 
-private fun TypeInterpretation.adjustOffsets(offset: Int) = copy(fields = fields.map { (name, field) ->
+private fun TypeIntrp.adjustOffsets(offset: Int) = copy(fields = fields.map { (name, field) ->
     name to field.copy(offset = (field.offset + offset))
 }.toMap())

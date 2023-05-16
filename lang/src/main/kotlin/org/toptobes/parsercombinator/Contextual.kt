@@ -1,8 +1,8 @@
 package org.toptobes.parsercombinator
 
+import org.toptobes.RESERVED_MEM_SIZE
 import org.toptobes.lang.ast.*
 import org.toptobes.lang.utils.toBytes
-import org.toptobes.lang.utils.toWord
 
 class Context(initialState: OkayParseState<*>) {
     var state: OkayParseState<*> = initialState
@@ -37,27 +37,37 @@ class Context(initialState: OkayParseState<*>) {
         return parse(parser) != null
     }
 
-    infix fun addVar(def: Symbol) {
-        if (def is Variable) {
-            def.address = state.vars.nextAddress
-        }
+    fun addVar(variable: Variable, alloc: Boolean) {
+        val actualVar = if (alloc) {
+            val newAddress = state.allocations.size + RESERVED_MEM_SIZE
 
-        val nextMap = state.vars + (def.name to def)
-        val nextAddress = (state.vars.nextAddress + when (def) {
-            is Constant -> 0
-            is Label    -> 0
-            is Variable -> def.allocatedBytes.size
-        }).toWord()
+            val newAllocation = state.allocations + variable.bytes
+            state = state.copy(allocations = newAllocation)
 
-        state = state.copy(vars = state.vars.copy(vars = nextMap, nextAddress = nextAddress))
+            variable.copy(bytes = newAddress.toBytes())
+        } else variable
+
+        state = state.copy(symbols = state.symbols + actualVar)
     }
 
-    infix fun addType(def: TypeInterpretation) {
-        state = state.copy(types = state.types + (def.typeName to def))
+    fun addType(type: TypeIntrp) {
+        state = state.copy(symbols = state.symbols + type)
     }
 
-    fun assume(name: String, interpretation: Interpretation) {
-        state = state.copy(assumptions = state.assumptions + (name to interpretation))
+    fun addLabel(label: Label) {
+        state = state.copy(symbols = state.symbols + label)
+    }
+
+    fun addMacro(macro: Macro) {
+        state = state.copy(symbols = state.symbols + macro)
+    }
+
+    inline fun <reified T> lookup(name: String): T? {
+        return state.symbols[name] as? T
+    }
+
+    private operator fun SymbolMap.plus(symbol: Symbol): Map<String, Symbol> {
+        return this + (symbol.name to symbol)
     }
 }
 
@@ -66,7 +76,7 @@ private class ContextualParseSuccess(val result: Any?) : Exception()
 private class ContextualParseError(val errorMsg: String) : Exception()
 
 class ContextScope<R>(val ctx: Context) {
-    fun fail(str: String): Nothing {
+    fun fail(str: String = ""): Nothing {
         throw ContextualParseError(str)
     }
 

@@ -1,5 +1,6 @@
 package org.toptobes
 
+import org.toptobes.lang.ast.WordIntrp
 import org.toptobes.lang.codegen.encode
 import org.toptobes.lang.parsing.codeParser
 import org.toptobes.lang.preprocessor.findLabels
@@ -20,7 +21,7 @@ fun main() {
         macro PrintLn reg str =
           | byte RandName(1) = str, 10, 0
           | mov reg, &RandName(1)
-          | mov @<word>PRINTER, reg
+          | mov @<word ptr PRINTER>, reg
         
         imm word answer = 16
         
@@ -30,15 +31,11 @@ fun main() {
         Word myWord = Word{0}
         
         _start:
-            mov ax, 2
-            mov cx, &myWord
-            mov <Word>cx.word, ax
-            
             PrintLn(cx, str: "Guess a number in 1..100")
             mov dx, answer
             
             LoopHead:
-                mov cx, @<word>READER
+                mov cx, @<word ptr READER>
                 call closeness
                 jmp LoopHead
         
@@ -49,7 +46,7 @@ fun main() {
             
             PrintLn(cx, "You got it!")
             halt
-                
+            
             LessThan:
                 PrintLn(cx, "Higher...")
                 ret
@@ -69,7 +66,7 @@ fun main() {
     }
 }
 
-const val RESERVED_MEM_SIZE: Word = 2
+const val RESERVED_MEM_SIZE = 2
 
 private fun compile(str: String): List<Byte>? {
     val (newStr, macros) = findMacros(str)
@@ -79,7 +76,7 @@ private fun compile(str: String): List<Byte>? {
 
     return if (ast.isOkay()) {
         println(ast.prettyString())
-        encode(ast.result, ast.vars)
+        encode(ast.result, ast.symbols, ast.allocations)
     } else {
         println(ast.error)
         null

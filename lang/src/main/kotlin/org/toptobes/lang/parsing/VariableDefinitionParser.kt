@@ -12,82 +12,61 @@ import org.toptobes.parsercombinator.impls.strOf
 import org.toptobes.parsercombinator.unaryMinus
 
 val labelDefinition = contextual {
+    val isExport = ctx canParse -str("export")
     val name = ctx parse -strOf(identifier, ":") orFail "Not a label"
-    val label = Label(name.trimEnd(':'))
+    val label = Label(name.trimEnd(':'), isExport)
     succeed(label)
 }
 
 val variableDefinition = contextual {
-    val allocType = ctx parse modifiers orCrash "Error reading modifiers"
+    val (isAllocated, isExport) = ctx parse modifiers orCrash "Error reading modifiers"
 
     val type = ctx parse -identifier orFail  "Not a variable definition"
     val name = ctx parse -identifier orCrash "Error parsing var definition name"
 
     ctx parse -str("=") orCrash "Missing ="
 
-    val (bytes, interpretation) = ctx parse when (type) {
-        "byte", "db" -> byteConstructor(allocType)
-        "word", "dw", "addr" -> wordConstructor(allocType)
-        else -> typeConstructor(name, type, allocType)
+    val (bytes, interp) = ctx parse when (type) {
+        "byte", "db" -> byteConstructor(isAllocated)
+        "word", "dw", "addr" -> wordConstructor(isAllocated)
+        else -> typeConstructor(name, type, isAllocated)
     } orCrash "Error parsing $name's initializer"
 
-    val symbol = when (allocType) {
-        Allocated -> Variable(name, bytes)
-        Immediate -> Constant(name, bytes)
-    }
-
-    ctx addVar symbol
-    ctx.assume(name, interpretation)
+    ctx.addVar(Variable(name, isExport, interp, bytes), isAllocated)
     succeed(DeleteThisNode)
 }
 
-private fun byteConstructor(allocType: AllocationType) = any(
+private fun byteConstructor(isAllocated: Boolean) = any(
     singleByte.map { bytes ->
-        bytes to if (allocType == Allocated) Ptr(ByteInterpretation) else ByteInterpretation
+        bytes to if (isAllocated) Ptr(ByteIntrp) else ByteIntrp
     },
     byteArray.map { bytes ->
-        bytes to if (allocType == Allocated) Ptr(ByteInterpretation) else Vec(ByteInterpretation, bytes.size)
+        bytes to if (isAllocated) Ptr(ByteIntrp) else Vec(ByteIntrp, bytes.size)
     },
 )
 
-private fun wordConstructor(allocType: AllocationType) = any(
+private fun wordConstructor(isAllocated: Boolean) = any(
     singleWord.map { bytes ->
-        bytes to if (allocType == Allocated) Ptr(WordInterpretation) else WordInterpretation
+        bytes to if (isAllocated) Ptr(WordIntrp) else WordIntrp
     },
     wordArray.map { bytes ->
-        bytes to if (allocType == Allocated) Ptr(WordInterpretation) else Vec(WordInterpretation, bytes.size)
+        bytes to if (isAllocated) Ptr(WordIntrp) else Vec(WordIntrp, bytes.size)
     },
 )
 
-private fun typeConstructor(name: String, type: String, allocType: AllocationType) = typeConstructor(name, type).map { (bytes, type) ->
-    bytes to if (allocType == Allocated) Ptr(type) else type
+private fun typeConstructor(name: String, type: String, isAllocated: Boolean) = typeConstructor(name, type).map { (bytes, type) ->
+    bytes to if (isAllocated) Ptr(type) else type
 }
 
 private val modifiers = contextual {
     val modifiers = ctx parse pool(-str("alloc"), -str("imm"), -str("export")) orCrash "Error parsing variable keywords"
     val isEmbedded  = "imm"   in modifiers
     val isAllocated = "alloc" in modifiers || !isEmbedded
+    val isExported  = "alloc" in modifiers || !isEmbedded
 
     if (isAllocated && isEmbedded) {
         crash("Conflicting allocation type keywords")
     }
 
-    val allocType = when {
-        isEmbedded -> Immediate
-        else -> Allocated
-    }
-
-    succeed(allocType)
-}
-
-sealed interface AllocationType
-object Allocated : AllocationType
-object Immediate : AllocationType
-
-fun makeVariable(bytes: ByteArray): (String) -> Variable {
-    return { name: String -> Variable(name, bytes) }
-}
-
-fun makeConstant(bytes: ByteArray): (String) -> Constant {
-    return { name: String -> Constant(name, bytes) }
+    succeed(isAllocated to isExported)
 }
