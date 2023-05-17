@@ -57,16 +57,16 @@ val instructions = File("../opcodes")
 private val movPtrTypeParser = contextual {
     val (typeName, reg1, fields, reg2) = """
         mov <type ptr reg1>.fields, reg2
-        -) 'mov'            crash: Not an instruction
-        -) '<'              fail:  Not a cast
-        *) \name            crash: Cast missing type
-        -) 'ptr'            crash: Cast isn't casting to ptr
-        *) \name            crash: Cast missing register
-        -) '>'              crash: Cast missing >
-        -) '.'              crash: Missing fields
-        *) \fields          crash: Error parsing fields
-        -) ','              crash: Missing comma
-        *) \name            crash: Missing 2nd register
+        [-] 'mov'            crash: Not an instruction
+        [-] '<'              fail:  Not a cast
+        [*] \name            crash: Cast missing type
+        [-] 'ptr'            crash: Cast isn't casting to ptr
+        [*] \name            crash: Cast missing register
+        [-] '>'              crash: Cast missing >
+        [-] '.'              crash: Missing fields
+        [*] \fields          crash: Error parsing fields
+        [-] ','              crash: Missing comma
+        [*] \name            crash: Missing 2nd register
     """.compilePc()(ctx)
 
     val type = ctx.lookup<TypeIntrp>(typeName)!!

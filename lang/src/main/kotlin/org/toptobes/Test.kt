@@ -1,15 +1,7 @@
 package org.toptobes
 
-import org.toptobes.lang.ast.WordIntrp
-import org.toptobes.lang.codegen.encode
-import org.toptobes.lang.parsing.codeParser
-import org.toptobes.lang.preprocessor.findLabels
-import org.toptobes.lang.preprocessor.findMacros
-import org.toptobes.lang.preprocessor.replaceMacros
-import org.toptobes.lang.utils.Word
-import org.toptobes.lang.utils.prettyString
+import org.toptobes.lang.compile
 import org.toptobes.parsercombinator.DescriptiveParsingException
-import org.toptobes.parsercombinator.isOkay
 import java.io.File
 
 fun main() {
@@ -61,22 +53,5 @@ fun main() {
         }
     } catch (e: DescriptiveParsingException) {
         println(e.message)
-    }
-}
-
-const val RESERVED_MEM_SIZE = 2
-
-private fun compile(str: String): List<Byte>? {
-    val (newStr, macros) = findMacros(str)
-    val newStr2 = replaceMacros(macros, newStr)
-    val labels = findLabels(newStr2)
-    val ast = codeParser(newStr2, labels)
-
-    return if (ast.isOkay()) {
-        println(ast.prettyString())
-        encode(ast.result, ast.symbols, ast.allocations)
-    } else {
-        println(ast.error)
-        null
     }
 }

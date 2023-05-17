@@ -1,6 +1,6 @@
 package org.toptobes.parsercombinator
 
-import org.toptobes.RESERVED_MEM_SIZE
+import org.toptobes.lang.DATA_SEGMENT_START_OFFSET
 import org.toptobes.lang.ast.*
 import org.toptobes.lang.utils.toBytes
 
@@ -39,7 +39,7 @@ class Context(initialState: OkayParseState<*>) {
 
     fun addVar(variable: Variable, alloc: Boolean) {
         val actualVar = if (alloc) {
-            val newAddress = state.allocations.size + RESERVED_MEM_SIZE
+            val newAddress = state.allocations.size + DATA_SEGMENT_START_OFFSET
 
             val newAllocation = state.allocations + variable.bytes
             state = state.copy(allocations = newAllocation)
@@ -64,8 +64,8 @@ class Context(initialState: OkayParseState<*>) {
 }
 
 // I know this is terrible practice but whatever this is for myself so who cares
-private class ContextualParseSuccess(val result: Any?) : Exception()
-private class ContextualParseError(val errorMsg: String) : Exception()
+class ContextualParseSuccess(val result: Any?) : Exception()
+class ContextualParseError(val errorMsg: String) : Exception()
 
 class ContextScope<R>(val ctx: Context) {
     fun fail(str: String = ""): Nothing {

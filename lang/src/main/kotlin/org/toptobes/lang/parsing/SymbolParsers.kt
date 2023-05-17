@@ -84,11 +84,8 @@ fun const(size: Int) = contextual {
 }
 
 private val constPtr = contextual {
-    val ptrIntrp = ctx parse castStart orFail "No cast"
-
-    if (ptrIntrp !is Ptr) {
-        crash("Expected ptr, got ${ptrIntrp.prettyString()}")
-    }
+    ctx parse -str("<") orFail "Not a cast"
+    val ptrIntrp = intrp<Ptr>() orCrash "Cast doesn't contain an interpretation"
 
     ctx.parse(word) {
         ctx parse -str(">") orCrash "Cast missing >"

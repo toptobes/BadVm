@@ -1,9 +1,6 @@
 package org.toptobes.lang.parsing
 
-import org.toptobes.lang.ast.ByteIntrp
-import org.toptobes.lang.ast.Interpretation
-import org.toptobes.lang.ast.Ptr
-import org.toptobes.lang.ast.WordIntrp
+import org.toptobes.lang.ast.*
 import org.toptobes.lang.utils.UWord
 import org.toptobes.lang.utils.Word
 import org.toptobes.lang.utils.toWord
@@ -56,10 +53,22 @@ fun <R> cStyleArrayOf(parser: Parser<R>): Parser<List<R>> {
     return betweenCurlyBrackets(sepByCommas(parser))
 }
 
-val castStart = contextual {
-    ctx parse -str("<") orFail "Not a cast"
-    val intrpName = ctx parse -identifier orCrash "Missing cast type"
-    val isPtr = ctx canParse str("ptr")
+inline fun <reified T : Interpretation> ContextScope<*>.intrp() = (ctx parse intrp)?.also {
+    if (it !is T) {
+        crash("Expected ${T::class.java.simpleName}, got ${it::class.java.simpleName}")
+    }
+} as T
+
+val intrp = contextual {
+    val intrpName = ctx parse identifier orFail "Not an intrp"
+    val modifiers = ctx parse pool(-betweenSquareBrackets(word)..{ it.toString() }, -str("ptr")) orCrash ""
+
+    val isPtr = "ptr" in modifiers
+
+    if (isPtr && modifiers.size == 2) {
+        crash("Can't have a pointer to a vector")
+    }
+    val isVec = modifiers.size == 1 && !isPtr
 
     val intrp = when (intrpName) {
         "word", "dw" -> WordIntrp
@@ -67,9 +76,9 @@ val castStart = contextual {
         else -> ctx.lookup<Interpretation>(intrpName) ?: crash("$intrpName is not a valid interpretation")
     }
 
-    if (isPtr) {
-        succeed(Ptr(intrp))
-    } else {
-        succeed(intrp)
-    }
+    succeed(when {
+        isPtr -> Ptr(intrp)
+        isVec -> Vec(intrp, modifiers[0].toInt())
+        else  -> intrp
+    })
 }

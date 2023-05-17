@@ -1,15 +1,29 @@
 package org.toptobes.parsercombinator
 
+import org.toptobes.lang.parsing.constructors.singleByte
+import org.toptobes.lang.parsing.constructors.singleWord
 import org.toptobes.lang.parsing.identifier
+import org.toptobes.lang.utils.toWord
 import org.toptobes.parsercombinator.impls.*
+import java.lang.NullPointerException
+
+private val parserLookupTable = mutableMapOf<String, (List<Parser<String>>) -> Parser<String>>(
+    "name" to { identifier },
+    "word" to { singleWord..{ it.toWord().toString() } },
+    "byte" to { singleByte..{ it[0].toString() } },
+    "fields" to { sepBy(identifier, str("."))..{ s -> s.joinToString(".") } },
+)
+
+fun pcStrAddParser(name: String, parser: (List<Parser<String>>) -> Parser<String>) {
+    parserLookupTable += name to parser
+}
 
 fun String.compilePc(): (Context) -> List<String> {
-    val parsedState = compiler.invoke(this, emptyMap())
+    val parsedState = compiler.invoke(this.trimIndent(), emptyMap())
 
     if (parsedState.isOkay()) {
        return { ctx: Context ->
-           val result = ctx parse parsedState.result
-           result ?: throw ParsingException(ctx.errorStr ?: "Err in pc str")
+           (ctx parse parsedState.result) ?: throw ContextualParseError(ctx.errorStr ?: "Err in pc str")
        }
     } else {
         throw ParsingException("Error parsing PC str (${parsedState.error})")
@@ -18,29 +32,44 @@ fun String.compilePc(): (Context) -> List<String> {
 
 private val compiledStrings = mutableMapOf<String, Parser<List<String>>>()
 
+val untilNewLine = until(nextLetter) { it.ifOkay { result == "\n" } ?: true }
+    .map { it.joinToString("") }
+
 private val compiler: Parser<Parser<List<String>>> = contextual {
-    val key = ctx parse regex("[^*-]*") orCrash "Error parsing key str"
+    val key = ctx parse untilNewLine orCrash "Error parsing key str"
 
     compiledStrings[key]?.let(::succeed)
 
     val fns = mutableListOf<ContextScope<List<String>>.(Context) -> String?>()
+    val parsers = mutableMapOf<String, Parser<String>>()
 
     while (ctx.state.index < ctx.state.target.length) {
-        val discard = ctx parse (-str("*") or -str("-"))
-        ctx parse -str(")") orCrash "Missing parenthesis"
+        ctx parse -str("[") orCrash "Missing ["
+        val type = ctx parse (str("*") or str("-") or digits) orCrash "Missing parser type"
+        ctx parse -str("]") orCrash "Missing ]"
 
-        val parser = ctx parse parser orCrash "Error parsing parser"
-        val failFn = ctx parse failFn orCrash "Error parsing fail fn"
+        val parser = ctx parse parser(parsers) orCrash "Error parsing parser"
 
-        fns += {
-            val result = (ctx parse -parser) ?: failFn()
-            if (discard == "-") null else result
+        val failFn = when {
+            type.isInt()          -> ({ TODO() })
+            ctx canPeek -str("[") -> ({ throw NullPointerException() })
+            else -> ctx parse failFn orCrash "Error parsing fail fn"
+        }
+
+        when {
+            type == "*" -> fns += {
+                (ctx parse -parser) ?: failFn()
+            }
+            type == "-" -> fns += {
+                (ctx parse -parser) ?: failFn(); null
+            }
+            type.isInt()  -> parsers += type to parser
+            else -> TODO()
         }
     }
 
     val parser = contextual {
-        val results = fns.mapNotNull { fn ->
-            fn(this, ctx) }
+        val results = fns.mapNotNull { fn -> fn(this, ctx) }
         succeed(results)
     }
 
@@ -50,26 +79,39 @@ private val compiler: Parser<Parser<List<String>>> = contextual {
 
 private val strParser = betweenSingleQuotes(regex("[^']*"))..(::str)
 
-private val parserParser = contextual {
+private fun parserParser(parsers: Map<String, Parser<String>>): Parser<Parser<String>> = contextual {
     ctx parse -str("\\") orFail "Not a parser parser"
-    val parser = ctx parse -identifier orCrash "Error parsing parser name"
+    val parserName = ctx parse -(identifier or digits) orCrash "Error parsing parser name"
+    val args = ctx parse repeatedly(-parser(parsers)) orCrash "Error parsing parser args"
 
-    succeed(when (parser) {
-        "name" -> identifier
-        "fields" -> sepBy(identifier, str("."))..{ s -> s.joinToString(".") }
-        else -> TODO()
+    succeed(when {
+        parserName.isInt() -> parsers[parserName] ?: crash("No parser with id #$parserName")
+        else -> parserLookupTable[parserName]?.let { p -> p(args) } ?: crash("No parser with name $parserName")
     })
 }
 
-private val parser: Parser<Parser<String>> = -any(
-    strParser,
-    parserParser,
-)
+private fun singleParser(parsers: Map<String, Parser<String>>) = contextual {
+    val parser = ctx parse -any(
+        strParser,
+        parserParser(parsers),
+    ) orFail "Error parsing single parser"
+
+    val isOptional = ctx canParse -str("?")
+
+    succeed(if (isOptional) parser withDefault "" else parser)
+}
+
+private fun parser(parsers: Map<String, Parser<String>>) = sepBy(
+    -singleParser(parsers),
+    str("|"),
+    allowTrailingSep = false,
+    requireMatch = true
+).map(::any)
 
 private val failFn: Parser<ContextScope<*>.() -> Nothing> = -sequence(
     -identifier,
-    -str(":"),
-    regex("[^*-]*")
+    str(":"),
+    -untilNewLine,
 ).map { (fnType, _, str) ->
     val ret: ContextScope<*>.() -> Nothing = when (fnType) {
         "crash" -> ({ crash(str) })
@@ -78,3 +120,5 @@ private val failFn: Parser<ContextScope<*>.() -> Nothing> = -sequence(
     }
     ret
 }
+
+private fun String.isInt() = toIntOrNull() != null

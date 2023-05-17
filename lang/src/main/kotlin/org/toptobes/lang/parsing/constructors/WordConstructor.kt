@@ -32,15 +32,19 @@ val wordArray: Parser<ByteArray> get() = contextual {
     succeed(bytes + moreBytes)
 }
 
-private val literalWordArray = cStyleArrayOf(any(
+private val literalWordArray = cStyleArrayOf(
     singleWord
-))..{ it.reduce { a, b -> a + b} }
+)..{ it.reduce { a, b -> a + b} }
 
 private val wordArrayBuilder = contextual {
-    val numBytes = word..(Word::toString)
-    val initializer = (word..(Word::toString) or str("it") or str("?"))
-
-    val (n, _, init) = ctx parse betweenSquareBrackets(sequence(numBytes, -str(","), initializer)) orFail "Not a word array builder"
+    val (n, init) = """
+        word[n, init]
+        [-] '['                      fail:  Not a word[] builder
+        [*] \word                    crash: Can't parse the # of bytes needed
+        [-] ','                      crash: word[] builder missing comma
+        [*] '?' | 'it' | \word       crash: Can't parse word[] initializer
+        [-] ']'                      crash: word[] builder missing closing bracket
+    """.compilePc()(ctx)
 
     val initWord = when {
         init.isWord() -> init.toWordOrNull()

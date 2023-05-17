@@ -96,7 +96,7 @@ private fun nextUnnamedTypeConstructorField(fields: MutableList<Field<*>>) = con
     val field = fields.removeFirst()
     val fieldName = field.name
 
-    (ctx parse -strOf(fieldName, -str(":")))
+    ctx parse -strOf(fieldName, ":")
     succeed(field)
 }
 
@@ -108,6 +108,6 @@ private fun nextNamedTypeConstructorField(type: TypeIntrp, fields: MutableList<F
     val fieldType = fields[fieldTypeIdx]
     fields.removeAt(fieldTypeIdx)
 
-    (ctx parse -str(":")) orCrash "Named type constructor for '${type.name}' missing a :"
+    ctx parse -str(":") orCrash "Named type constructor for '${type.name}' missing a :"
     succeed(fieldType)
 }
