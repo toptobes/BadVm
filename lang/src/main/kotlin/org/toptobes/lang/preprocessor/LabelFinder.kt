@@ -10,8 +10,8 @@ import org.toptobes.parsercombinator.SymbolMap
  * It also requires some amount of whitespace before it, or
  * the start of the file.
  */
-fun findLabels(str: String): SymbolMap =
+fun findLabels(str: String): Set<Label> =
     Regex("(^|[^({,]\\s+)($identifierRegex):")
         .findAll(str)
         .map { Label(it.groupValues[2], false) }
-        .associateBy { it.name }
+        .toSet()

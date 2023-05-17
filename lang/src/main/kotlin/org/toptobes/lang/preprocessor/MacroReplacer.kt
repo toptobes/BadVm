@@ -1,9 +1,28 @@
 package org.toptobes.lang.preprocessor
 
 import org.toptobes.lang.ast.Macro
+import org.toptobes.lang.ast.Symbol
 import org.toptobes.lang.parsing.identifierRegex
 import kotlin.random.Random
 import kotlin.random.nextULong
+
+fun replaceMacros(str: String, imports: Set<Symbol>): Pair<String, Set<Symbol>> {
+    val (newStr, macros) = findMacros(str, imports)
+
+    return macros.fold(newStr) { prevStr, macro ->
+        val regex = Regex("${macro.name}\\((.*?)\\)")
+
+        regex.replace(prevStr) {
+            val args = it.groupValues[1]
+                .split(",")
+                .mapIndexed { idx, arg ->
+                    arg.substringAfter(macro.args[idx] + ":").trim()
+                }
+
+            macro.replaceFn(args)
+        }
+    } to macros
+}
 
 /**
  * The macro regex matches a macro of the format
@@ -17,8 +36,8 @@ import kotlin.random.nextULong
  * by the same seed. Different calls have different seed shifters
  * so it's never the same (well at least in practice)
  */
-fun findMacros(str: String): Pair<String, MutableList<Macro>> {
-    val macros = mutableListOf<Macro>()
+private fun findMacros(str: String, imports: Set<Symbol>): Pair<String, Set<Macro>> {
+    val macros = imports.filterIsInstance<Macro>().toMutableSet()
 
     val newStr = Regex("macro\\s+($identifierRegex)\\s+((?:$identifierRegex\\s+)*)\\s*=((?:\\s*\\|\\s*.*[^|\n])*)")
         .replace(str) {
@@ -56,18 +75,4 @@ fun findMacros(str: String): Pair<String, MutableList<Macro>> {
         }
 
     return newStr to macros
-}
-
-fun replaceMacros(macros: List<Macro>, str: String) = macros.fold(str) { prevStr, macro ->
-    val regex = Regex("${macro.name}\\((.*?)\\)")
-
-    regex.replace(prevStr) {
-        val args = it.groupValues[1]
-            .split(",")
-            .mapIndexed { idx, arg ->
-                arg.substringAfter(macro.args[idx] + ":").trim()
-            }
-
-        macro.replaceFn(args)
-    }
 }

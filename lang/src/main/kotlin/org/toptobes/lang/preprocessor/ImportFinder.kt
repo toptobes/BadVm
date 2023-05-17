@@ -6,8 +6,8 @@ import java.io.File
 
 data class Import(val from: File, val symbolNames: List<String>, val mode: ImportMode)
 
-fun findImports(str: String): Pair<String, MutableList<Import>> {
-    val imports = mutableListOf<Import>()
+fun findImports(str: String): Pair<String, Set<Import>> {
+    val imports = mutableSetOf<Import>()
 
     val newStr = Regex("import\\s+\"(.*?)\"\\s+(=)?((?:\\s+[!|]\\s+$identifierRegex)*)")
         .replace(str) {

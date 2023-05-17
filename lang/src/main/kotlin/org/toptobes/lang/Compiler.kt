@@ -1,3 +1,5 @@
+@file:Suppress("SpellCheckingInspection")
+
 package org.toptobes.lang
 
 import org.toptobes.lang.ast.Symbol
@@ -10,17 +12,48 @@ import java.io.File
 
 const val DATA_SEGMENT_START_OFFSET = 2
 
-fun compile(vararg files: File) {
+fun compile(files: List<File>): List<Byte>? {
     val dehydratedSourceFiles = files.map {
         val (code, imports) = findImports(it.readText())
-        SourceFile(it, code, imports, emptyList())
+        SourceFile(it, code, imports, emptySet())
     }
 
     val dependencyGraph = buildDependencyGraph(dehydratedSourceFiles)
-    val compilationOrder = sortTopological(dependencyGraph)
+    println(dependencyGraph.map { it.sfile.file to it.dependants.map { it.sfile.file } })
+
+    val compilationOrder = sortTopological(dependencyGraph).toMutableList()
+    println(compilationOrder.map { it.sfile.file to it.dependants.map { it.sfile.file } })
+
+    val hydratedSourceFiles = mutableSetOf<SourceFile>()
+
+    return compilationOrder.flatMap { node ->
+        val imports = resolveImports(node.sfile, hydratedSourceFiles)
+        val (bytes, exports) = compile(node.sfile, imports) ?: return null
+        hydratedSourceFiles += node.sfile.copy(exports = exports)
+        bytes
+    }
 }
 
+fun resolveImports(sfile: SourceFile, sfiles: Set<SourceFile>): Set<Symbol> = sfile.imports.flatMap { import ->
+    val dependency = sfiles.first {
+        it.file == import.from
+    }
+
+    when (import.mode) {
+        All -> {
+            dependency.exports
+        }
+        Hiding -> {
+            dependency.exports.filter { it.name !in import.symbolNames }
+        }
+        Only -> {
+            dependency.exports.filter { it.name in import.symbolNames }
+        }
+    }
+}.toSet()
+
 private fun sortTopological(nodes: List<DependencyNode>): List<DependencyNode> {
+    val nodesBackup = nodes.map { it.copy(dependants = it.dependants.toMutableList()) }
     val roots = nodes.filter { it.dependants.isEmpty() }.toMutableList()
     val sorted = mutableListOf<DependencyNode>()
 
@@ -37,11 +70,12 @@ private fun sortTopological(nodes: List<DependencyNode>): List<DependencyNode> {
         }
     }
 
+    sorted.forEach { it.dependants.addAll(nodesBackup.first { n -> it.sfile == n.sfile }.dependants) }
     return sorted
 }
 
 data class DependencyNode(
-    val file: SourceFile,
+    val sfile: SourceFile,
     val dependants: MutableList<DependencyNode>,
 )
 
@@ -68,19 +102,19 @@ fun buildDependencyGraph(files: List<SourceFile>): List<DependencyNode> {
     }
 }
 
-data class SourceFile(val file: File, val code: String, val imports: List<Import>, val exports: List<Symbol>)
+data class SourceFile(val file: File, val code: String, val imports: Set<Import>, val exports: Set<Symbol>)
 
-fun compile(str: String): List<Byte>? {
-    val (newStr, macros) = findMacros(str)
-    val (newStr2, imports) = findImports(newStr)
-    return null
-    val newStr3 = replaceMacros(macros, newStr2)
-    val labels = findLabels(newStr3)
-    val ast = codeParser(newStr3, labels)
+fun compile(sfile: SourceFile, imports: Set<Symbol>): Pair<List<Byte>, Set<Symbol>>? {
+    val (newStr, macros) = replaceMacros(sfile.code, imports)
+    val labels = findLabels(newStr)
+
+    val symbolMap = (imports + macros + labels).associateBy { it.name }
+    val ast = codeParser(newStr, symbolMap)
 
     return if (ast.isOkay()) {
         println(ast.prettyString())
-        encode(ast.result, ast.symbols, ast.allocations)
+        val exports = ast.symbols.values.filter { it.export }.toSet()
+        encode(ast.result, ast.symbols, ast.allocations) to exports
     } else {
         println(ast.error)
         null
