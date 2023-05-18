@@ -67,5 +67,9 @@ word cpu_run(cpu_t *cpu) {
         puts("");
     #endif
 
+    for (int i = 500; i < 579; i++) {
+        printf("%d, ", mmu_read_byte(cpu->mmap, i));
+    }
+
     return cpu_reg16(ax);
 }

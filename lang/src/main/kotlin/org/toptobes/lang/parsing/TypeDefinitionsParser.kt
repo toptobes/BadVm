@@ -20,9 +20,9 @@ private val declaredType = contextual {
 }
 
 private val definedType = contextual {
-    val isExport = ctx canParse -str("isExport")
+    val isExport = ctx canParse -str("export")
 
-    ctx parse -str("type") orFail  "Not a type definition"
+    ctx parse -str("type") orFail "Not a type definition"
 
     val name = ctx parse -identifier orCrash "Error parsing declared type's identifier"
 
@@ -59,7 +59,7 @@ private val fieldsParser = contextual {
 private fun embeddedField(offset: Int) = contextual {
     val typeName = ctx parse -identifier orCrash "Error parsing type for field"
 
-    if (typeName in listOf("word", "dw")) {
+    if (typeName in listOf("addr", "word", "dw")) {
         crash("Can't embed a 'word' field")
     }
 
@@ -78,7 +78,7 @@ private fun normalField(offset: Int) = contextual {
     val name = ctx parse -identifier orCrash "Error parsing name for field"
 
     val field = when (typeName) {
-        "byte", "db" -> Field(name, ByteIntrp, offset)
+        "addr", "byte", "db" -> Field(name, ByteIntrp, offset)
         "word", "dw" -> Field(name, WordIntrp, offset)
         else -> {
             val type = ctx.lookup<TypeIntrp>(typeName) ?: crash("$typeName is not a type")

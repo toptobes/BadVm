@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include "../memory/mmu.h"
 
-#define NUM_REGISTERS 7
+#define NUM_REGISTERS 11
 #define STACK_START 0xff
 
 struct cpu_t;
@@ -30,6 +30,8 @@ typedef enum {
     sp, bp,
     ax, bx,
     cx, dx,
+    ex, fx,
+    gx, hx,
 } reg16_t;
 
 typedef enum {

@@ -7,12 +7,11 @@ import java.io.File
 fun main() {
     try {
         val files = listOf(
-            "Main.bsm",
-            "Word.bsm",
+            "../examples/Main.bsm",
+            "../examples/Graph.bsm",
         ).map(::File)
 
         val code = compile(files)
-
         println(code)
 
         File("../out").bufferedWriter().use { writer ->

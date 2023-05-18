@@ -2,11 +2,13 @@
 
 package org.toptobes.lang
 
+import org.toptobes.lang.ast.Label
 import org.toptobes.lang.ast.Symbol
 import org.toptobes.lang.codegen.encode
 import org.toptobes.lang.parsing.codeParser
 import org.toptobes.lang.preprocessor.*
 import org.toptobes.lang.utils.prettyString
+import org.toptobes.lang.utils.toBytesList
 import org.toptobes.parsercombinator.isOkay
 import java.io.File
 
@@ -14,29 +16,51 @@ const val DATA_SEGMENT_START_OFFSET = 2
 
 fun compile(files: List<File>): List<Byte>? {
     val dehydratedSourceFiles = files.map {
-        val (code, imports) = findImports(it.readText())
-        SourceFile(it, code, imports, emptySet())
+        val code1 = resolveIncludes(it.readText(), it)
+        val (code2, imports) = findImports(code1, it)
+        SourceFile(it.canonicalPath, code2, imports, emptySet())
     }
 
     val dependencyGraph = buildDependencyGraph(dehydratedSourceFiles)
-    println(dependencyGraph.map { it.sfile.file to it.dependants.map { it.sfile.file } })
 
     val compilationOrder = sortTopological(dependencyGraph).toMutableList()
-    println(compilationOrder.map { it.sfile.file to it.dependants.map { it.sfile.file } })
 
     val hydratedSourceFiles = mutableSetOf<SourceFile>()
 
-    return compilationOrder.flatMap { node ->
+    var dataSegStart = DATA_SEGMENT_START_OFFSET
+    var instructionsStart = dataSegStart
+
+    val bytes = compilationOrder.flatMap { node ->
         val imports = resolveImports(node.sfile, hydratedSourceFiles)
-        val (bytes, exports) = compile(node.sfile, imports) ?: return null
+        val (dataSeg, instructions, exports) = compile(node.sfile, imports, dataSegStart, instructionsStart) ?: return null
+        dataSegStart += dataSeg.size
+        instructionsStart = dataSegStart + instructions.size
+
         hydratedSourceFiles += node.sfile.copy(exports = exports)
-        bytes
+        dataSeg + instructions
     }
+
+    val startLabel = hydratedSourceFiles.flatMap { it.exports }.find { it.name == "_start" } as? Label
+    val startAddr = startLabel?.address ?: dataSegStart
+
+    return startAddr.toBytesList() + bytes
 }
 
-fun resolveImports(sfile: SourceFile, sfiles: Set<SourceFile>): Set<Symbol> = sfile.imports.flatMap { import ->
+private data class DependencyNode(
+    val sfile: SourceFile,
+    val dependants: MutableList<DependencyNode>,
+)
+
+private data class SourceFile(
+    val fp: String,
+    val code: String,
+    val imports: Set<Import>,
+    val exports: Set<Symbol>
+)
+
+private fun resolveImports(sfile: SourceFile, sfiles: Set<SourceFile>): Set<Symbol> = sfile.imports.flatMap { import ->
     val dependency = sfiles.first {
-        it.file == import.from
+        it.fp == import.fp
     }
 
     when (import.mode) {
@@ -71,25 +95,20 @@ private fun sortTopological(nodes: List<DependencyNode>): List<DependencyNode> {
     }
 
     sorted.forEach { it.dependants.addAll(nodesBackup.first { n -> it.sfile == n.sfile }.dependants) }
-    return sorted
+    return sorted.reversed()
 }
 
-data class DependencyNode(
-    val sfile: SourceFile,
-    val dependants: MutableList<DependencyNode>,
-)
+private fun buildDependencyGraph(files: List<SourceFile>): List<DependencyNode> {
+    val fileMap = files.associateBy { it.fp }
+    val dependencyMap = mutableMapOf<String, DependencyNode>()
 
-fun buildDependencyGraph(files: List<SourceFile>): List<DependencyNode> {
-    val fileMap = files.associateBy { it.file }
-    val dependencyMap = mutableMapOf<File, DependencyNode>()
-
-    fun buildNode(file: File): DependencyNode {
-        val sourceFile = fileMap[file]!!
+    fun buildNode(fp: String): DependencyNode {
+        val sourceFile = fileMap[fp]!!
 
         val dependants = files.flatMap { currentFile ->
             currentFile.imports.mapNotNull { import ->
-                if (import.from == file) {
-                    dependencyMap.getOrPut(currentFile.file) { buildNode(currentFile.file) }
+                if (import.fp == fp) {
+                    dependencyMap.getOrPut(currentFile.fp) { buildNode(currentFile.fp) }
                 } else null
             }
         }.toMutableList()
@@ -98,25 +117,24 @@ fun buildDependencyGraph(files: List<SourceFile>): List<DependencyNode> {
     }
 
     return files.map { file ->
-        dependencyMap.getOrPut(file.file) { buildNode(file.file) }
+        dependencyMap.getOrPut(file.fp) { buildNode(file.fp) }
     }
 }
 
-data class SourceFile(val file: File, val code: String, val imports: Set<Import>, val exports: Set<Symbol>)
-
-fun compile(sfile: SourceFile, imports: Set<Symbol>): Pair<List<Byte>, Set<Symbol>>? {
+private fun compile(sfile: SourceFile, imports: Set<Symbol>, dataSegStart: Int, instructionsStart: Int): Triple<List<Byte>, List<Byte>, Set<Symbol>>? {
     val (newStr, macros) = replaceMacros(sfile.code, imports)
     val labels = findLabels(newStr)
 
     val symbolMap = (imports + macros + labels).associateBy { it.name }
-    val ast = codeParser(newStr, symbolMap)
+    val parseResult = codeParser(newStr, symbolMap, dataSegStart)
 
-    return if (ast.isOkay()) {
-        println(ast.prettyString())
-        val exports = ast.symbols.values.filter { it.export }.toSet()
-        encode(ast.result, ast.symbols, ast.allocations) to exports
+    return if (parseResult.isOkay()) {
+//        println(parseResult.prettyString())
+        val exports = parseResult.symbols.values.filter { it.export || it.name == "_start" }.toSet()
+        val (dataSeg, instructions) = encode(parseResult, instructionsStart + parseResult.allocations.size)
+        Triple(dataSeg, instructions, exports)
     } else {
-        println(ast.error)
+//        println(parseResult.error)
         null
     }
 }

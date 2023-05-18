@@ -14,12 +14,12 @@ class Parser<out R>(val parse: (OkayParseState<*>) -> ParseState<R>) {
         return parse(oldState)
     }
 
-    operator fun invoke(target: String, symbols: SymbolMap): ParseState<R> {
-        return parsePropagating(UnitParseState<R>(target, symbols))
+    operator fun invoke(target: String, symbols: SymbolMap, dataSegStart: Int): ParseState<R> {
+        return parsePropagating(UnitParseState<R>(target, symbols, dataSegStart))
     }
 
-    fun log(target: String, symbols: SymbolMap, logFn: (Any) -> Unit = ::println): ParseState<R> {
-        return invoke(target, symbols).also {
+    fun log(target: String, symbols: SymbolMap, dataSegStart: Int, logFn: (Any) -> Unit = ::println): ParseState<R> {
+        return invoke(target, symbols, dataSegStart).also {
             logFn(it.prettyString())
         }
     }

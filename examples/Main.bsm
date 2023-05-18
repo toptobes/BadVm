@@ -1,0 +1,23 @@
+import "Graph.bsm"
+
+imm word MY_GRAPH_ADDR = 500
+
+word myData = [5, it]
+
+_start:
+    mov cx, MY_GRAPH_ADDR
+
+    mov dx, 10
+    mov ex, 10
+    call GraphNew
+
+    mov dx, &myData
+    call GraphAddNode
+
+    add dx, 2
+    call GraphAddNode
+
+    add dx, 4
+    call GraphAddNode
+
+    halt

@@ -3,15 +3,27 @@ package org.toptobes.lang.preprocessor
 import org.toptobes.lang.parsing.identifierRegex
 import org.toptobes.parsercombinator.ParsingException
 import java.io.File
+import java.nio.file.Path
 
-data class Import(val from: File, val symbolNames: List<String>, val mode: ImportMode)
+data class Import(val fp: String, val symbolNames: List<String>, val mode: ImportMode)
 
-fun findImports(str: String): Pair<String, Set<Import>> {
+fun resolveIncludes(str: String, basePath: File) = Regex("include\\s+\"(.*?)\"")
+    .replace(str) {
+        val file = basePath.resolveSibling(it.groupValues[1])
+
+        if (!file.exists()) {
+            throw ParsingException("Can not resolve file ${file.absolutePath}")
+        }
+
+        file.readText()
+    }
+
+fun findImports(str: String, basePath: File): Pair<String, Set<Import>> {
     val imports = mutableSetOf<Import>()
 
     val newStr = Regex("import\\s+\"(.*?)\"\\s+(=)?((?:\\s+[!|]\\s+$identifierRegex)*)")
         .replace(str) {
-            val file = File(it.groupValues[1])
+            val file = basePath.resolveSibling(it.groupValues[1])
 
             if (!file.exists()) {
                 throw ParsingException("Can not resolve file ${file.absolutePath}")
@@ -36,7 +48,7 @@ fun findImports(str: String): Pair<String, Set<Import>> {
 
             val symbolNames = symbols.split('!', '|').map(String::trim).filter(String::isNotBlank)
 
-            imports += Import(file, symbolNames, mode)
+            imports += Import(file.canonicalPath, symbolNames, mode)
             ""
         }
 

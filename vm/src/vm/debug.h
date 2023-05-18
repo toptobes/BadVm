@@ -13,8 +13,14 @@
     printf("bx: 0x%04x ", cpu_reg16(bx));   \
     printf("cx: 0x%04x ", cpu_reg16(cx));   \
     printf("dx: 0x%04x ", cpu_reg16(dx));   \
+    printf("ex: 0x%04x ", cpu_reg16(ex));   \
+    printf("fx: 0x%04x ", cpu_reg16(fx));   \
+    printf("gx: 0x%04x ", cpu_reg16(gx));   \
+    printf("hx: 0x%04x ", cpu_reg16(hx));   \
     puts("");                               \
 } while(0)
+
+#define DLOG(d) printf("\n----\n----\n%d\n----\n----\n", (d));
 
 #define CPU_DUMP_STACK(cpu) do {                                                                      \
     printf("stack:\n");                                                                               \

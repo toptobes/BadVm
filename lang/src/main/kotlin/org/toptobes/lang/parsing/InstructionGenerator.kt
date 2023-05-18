@@ -55,9 +55,11 @@ val instructions = File("../opcodes")
     .mapValues { (_, variations) -> variations.sortedByDescending { it.numArgs } }
 
 private val movPtrTypeParser = contextual {
-    val (typeName, reg1, fields, reg2) = """
-        mov <type ptr reg1>.fields, reg2
+    val (reg1, typeName, reg2, fields) = """
+        mov reg1, <type ptr reg2>.fields
         [-] 'mov'            crash: Not an instruction
+        [*] \name            fail:  Missing 2nd register
+        [-] ','              crash: Missing comma
         [-] '<'              fail:  Not a cast
         [*] \name            crash: Cast missing type
         [-] 'ptr'            crash: Cast isn't casting to ptr
@@ -65,15 +67,13 @@ private val movPtrTypeParser = contextual {
         [-] '>'              crash: Cast missing >
         [-] '.'              crash: Missing fields
         [*] \fields          crash: Error parsing fields
-        [-] ','              crash: Missing comma
-        [*] \name            crash: Missing 2nd register
     """.compilePc()(ctx)
 
     val type = ctx.lookup<TypeIntrp>(typeName)!!
 
     val offset = getFieldOrTypeOffset(fields.split(","), type)
 
-    succeed(Instruction("mov", listOf(Reg16(reg2), RegPtr(reg1), Imm16(offset.toWord()))))
+    succeed(Instruction("mov", listOf(Reg16(reg1), RegPtr(reg2), Imm16(offset.toWord()))))
 }
 
 val instructionParsers = instructions

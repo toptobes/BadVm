@@ -1,0 +1,52 @@
+type GraphLimits =
+ | word maxGraphSize
+ | word maxNumChildren
+
+export type Graph =
+ | word size
+ & GraphLimits
+
+export type Node =
+ | addr data
+ | addr children
+
+imm word NUM_RESERVED_BYTES = 6
+
+#=
+cx -> Graph start addr
+dx -> Max graph size
+ex -> Max # of children
+=#
+export GraphNew:
+    mov [cx], 0
+    mov [cx], 2, dx
+    mov [cx], 4, ex
+    ret
+
+#=
+cx -> Graph addr
+dx -> Data addr
+=#
+export GraphAddNode:
+    mov ax, <Graph ptr cx>.size
+
+    mov ex, <Graph ptr cx>.maxNumChildren
+    add ex, 2
+    mul ax, ex
+    shl ax, 1
+
+    psh cx
+    add cx, NUM_RESERVED_BYTES
+    add cx, ax
+    mov [cx], dx
+
+    pop cx
+    inc ax
+    mov [cx], ax
+
+    xor ax, ax
+    ret
+
+    TooManyChildren:
+        mov ax, 1
+        ret

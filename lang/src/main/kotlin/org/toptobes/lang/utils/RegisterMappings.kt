@@ -1,6 +1,6 @@
 package org.toptobes.lang.utils
 
-val reg16Codes = "sp, bp, ax, bx, cx, dx"
+val reg16Codes = "sp, bp, ax, bx, cx, dx, ex, fx, gx, hx"
     .split(", ")
     .mapIndexed { idx, name -> name to (idx + 1).toByte() }
     .toMap()

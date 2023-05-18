@@ -1,5 +1,7 @@
 package org.toptobes.lang.utils
 
+import kotlin.experimental.or
+
 typealias Word = Short
 typealias UWord = UShort
 
@@ -11,8 +13,8 @@ fun Collection<Word>.toWordArray() = toShortArray()
 
 fun ByteArray.toWord(): Word {
     require(this.size == 2) { "byte[] is not of size 2" }
-    val high = (this[0].toInt() shl 8).toWord()
-    val low  = this[1].toWord()
+    val high = (this[0].toInt() shl 8).toUWord().toInt()
+    val low  = this[1].toUByte().toInt()
     return (high + low).toWord()
 }
 

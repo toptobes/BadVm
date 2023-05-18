@@ -25,7 +25,7 @@ val label = contextual {
 val addr = contextual {
     ctx parse str("&") orFail "Not byte embedding"
 
-    val (variable, names) = ctx parse variableAndFields orCrash "Error parsing fields for addr"
+    val (variable, names) = ctx parse variableAndFields orFail "Error parsing fields for addr"
 
     if (variable.intrp !is Ptr) {
         crash("Trying to get addr of non-var")
@@ -42,7 +42,7 @@ val addr = contextual {
 fun embeddedBytes(size: IntRange = 0..Word.MAX_VALUE, requireEven: Boolean = false) = contextual {
     ctx parse str("...") orFail "Not byte embedding"
 
-    val (variable, names) = ctx parse variableAndFields orCrash "Error parsing fields for embedded bytes"
+    val (variable, names) = ctx parse variableAndFields orFail "Error parsing fields for embedded bytes"
 
     val bytes = when (variable.intrp) {
         is TypeIntrp -> {
@@ -92,7 +92,7 @@ private val constPtr = contextual {
         succeed(ptrIntrp to it.toBytes())
     }
 
-    val (variable, names) = ctx parse variableAndFields orCrash "Error parsing fields for const ptr"
+    val (variable, names) = ctx parse variableAndFields orFail "Error parsing fields for const ptr"
 
     ctx parse -str(">") orCrash "Cast missing >"
 
@@ -106,7 +106,7 @@ private val constPtr = contextual {
 }
 
 private val varPtr = contextual {
-    val (variable, names) = ctx parse variableAndFields orCrash "Error parsing name/fields for var ptr"
+    val (variable, names) = ctx parse variableAndFields orFail "Error parsing name/fields for var ptr"
     succeed(addOffsetToAddr(variable.bytes, variable.intrp as Ptr, names))
 }
 
@@ -158,6 +158,10 @@ fun getFieldOrTypeOffset(names: List<String>, type: TypeIntrp): Int {
 private val variableAndFields = contextual {
     val names = ctx parse -sepByPeriods(-identifier, requireMatch = true) orFail "Missing identifier"
 
+    if (names[0] in reg16Codes.keys) {
+        fail("'Tis a reg")
+    }
+    
     val variable = ctx.lookup<Variable>(names[0]) ?: crash("${names[0]} is an invalid symbol")
     succeed(variable to names.drop(1))
 }

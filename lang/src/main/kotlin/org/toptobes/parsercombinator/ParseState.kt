@@ -9,21 +9,26 @@ import kotlin.contracts.contract
 sealed class ParseState<out R> {
     abstract val target: String
     abstract val index: Int
+    abstract val constants: CompilerConstants
 }
 
 typealias SymbolMap = Map<String, Symbol>
+
+data class CompilerConstants(val relativeDataSegStartOffset: Int)
 
 // TODO: Make a file for pretty printing everything so it doesn't get in the way of actual logic
 data class OkayParseState<out R>(
     val result: R,
     val symbols: SymbolMap,
     val allocations: ByteArray,
+    override val constants: CompilerConstants,
     override val target: String,
     override val index: Int,
 ) : ParseState<R>()
 
 data class ErroredParseState(
     val error: String,
+    override val constants: CompilerConstants,
     override val target: String,
     override val index: Int,
 ) : ParseState<Nothing>()
@@ -51,16 +56,16 @@ inline fun <R, R2> ParseState<R>.ifOkay(block: OkayParseState<R>.() -> R2): R2? 
 }
 
 @Suppress("FunctionName", "UNCHECKED_CAST")
-fun <R> UnitParseState(target: String, symbols: SymbolMap): OkayParseState<R> {
-    return OkayParseState(null as R, symbols, ByteArray(0), target, 0)
+fun <R> UnitParseState(target: String, symbols: SymbolMap, dataSegStart: Int): OkayParseState<R> {
+    return OkayParseState(null as R, symbols, ByteArray(0), CompilerConstants(dataSegStart) ,target, 0)
 }
 
 fun <R> errored(state: ParseState<*>, error: String): ParseState<R> {
-    return ErroredParseState(error, state.target, state.index)
+    return ErroredParseState(error, state.constants, state.target, state.index)
 }
 
 fun <R> errored(state: ErroredParseState, error: String = state.error): ParseState<R> {
-    return ErroredParseState(error, state.target, state.index)
+    return ErroredParseState(error, state.constants, state.target, state.index)
 }
 
 fun <R> success(
@@ -70,7 +75,7 @@ fun <R> success(
     allocations: ByteArray,
     index: Int = state.index
 ): ParseState<R> {
-    return OkayParseState(result, symbols, allocations, state.target, index)
+    return OkayParseState(result, symbols, allocations, state.constants, state.target, index)
 }
 
 fun <R> success(
@@ -80,7 +85,7 @@ fun <R> success(
     allocations: ByteArray = state.allocations,
     index: Int = state.index
 ): ParseState<R> {
-    return OkayParseState(result, symbols, allocations, state.target, index)
+    return OkayParseState(result, symbols, allocations, state.constants, state.target, index)
 }
 
 fun <R> success(state: OkayParseState<R>): ParseState<R> {

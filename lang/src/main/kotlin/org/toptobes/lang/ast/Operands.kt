@@ -4,7 +4,6 @@ import org.toptobes.lang.utils.Word
 import org.toptobes.lang.utils.reg16Codes
 import org.toptobes.lang.utils.reg8Codes
 import org.toptobes.lang.utils.toBytes
-import kotlin.properties.Delegates
 
 sealed interface Operand : AstNode {
     val operandAssociation: String

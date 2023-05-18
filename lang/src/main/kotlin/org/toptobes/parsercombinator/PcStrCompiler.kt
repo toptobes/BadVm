@@ -19,7 +19,7 @@ fun pcStrAddParser(name: String, parser: (List<Parser<String>>) -> Parser<String
 }
 
 fun String.compilePc(): (Context) -> List<String> {
-    val parsedState = compiler.invoke(this.trimIndent(), emptyMap())
+    val parsedState = compiler.invoke(this.trimIndent(), emptyMap(), 0)
 
     if (parsedState.isOkay()) {
        return { ctx: Context ->

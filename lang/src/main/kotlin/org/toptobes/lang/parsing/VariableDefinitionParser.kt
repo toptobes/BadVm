@@ -15,6 +15,7 @@ val labelDefinition = contextual {
     val isExport = ctx canParse -str("export")
     val name = ctx parse -strOf(identifier, ":") orFail "Not a label"
     val label = Label(name.trimEnd(':'), isExport)
+    ctx.addLabel(label)
     succeed(label)
 }
 
