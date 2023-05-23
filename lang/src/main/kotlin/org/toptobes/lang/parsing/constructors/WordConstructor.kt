@@ -6,14 +6,14 @@ import org.toptobes.parsercombinator.*
 import org.toptobes.parsercombinator.impls.*
 
 val singleWord = contextual {
-    val bytes = ctx parse -any(
-        word..{ it.toBytes() },
+    val (bytes, isAddr) = ctx parse -any(
+        litWord..{ it.toBytes() to IS_ABS },
         embeddedBytes(2..2),
         const(2),
         addr,
     ) orFail "Not a single word"
 
-    succeed(bytes)
+    succeed(bytes to isAddr)
 }
 
 val wordArray: Parser<ByteArray> get() = contextual {

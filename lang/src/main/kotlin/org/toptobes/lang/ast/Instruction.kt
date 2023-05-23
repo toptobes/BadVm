@@ -17,8 +17,7 @@ fun Instruction.getTag(): String {
     val mnemonic = mnemonic
 
     val args = operands
-        .reversed()
-        .joinToString(separator = "_") { it.operandAssociation }
+        .joinToString("_") { it.operandAssociation }
 
     return (mnemonic + "_" + args)
         .trimEnd('_')

@@ -1,6 +1,6 @@
 type GraphLimits =
  | word maxGraphSize
- | word maxNumChildren
+ | word maxNumEdges
 
 export type Graph =
  | word size
@@ -8,7 +8,11 @@ export type Graph =
 
 export type Node =
  | addr data
- | addr children
+ | addr edges
+
+export type Edge
+ | word weight
+ | addr node
 
 imm word NUM_RESERVED_BYTES = 6
 
@@ -29,11 +33,15 @@ dx -> Data addr
 =#
 export GraphAddNode:
     mov ax, <Graph ptr cx>.size
+    mov ex, <Graph ptr cx>.maxGraphSize
 
-    mov ex, <Graph ptr cx>.maxNumChildren
-    add ex, 2
+    cmp ax, ex
+    jgt TooManyNodes
+
+    mov ex, <Graph ptr cx>.maxNumEdges
+    shl ex, 4
     mul ax, ex
-    shl ax, 1
+    add ax, 2
 
     psh cx
     add cx, NUM_RESERVED_BYTES
@@ -41,12 +49,13 @@ export GraphAddNode:
     mov [cx], dx
 
     pop cx
+    mov ax, <Graph ptr cx>.size
     inc ax
     mov [cx], ax
 
     xor ax, ax
     ret
 
-    TooManyChildren:
+    TooManyNodes:
         mov ax, 1
         ret

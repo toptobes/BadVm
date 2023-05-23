@@ -27,7 +27,7 @@ void cpu_step(cpu_t *cpu) {
         clock_t begin = clock();
     #endif
 
-    byte opcode = cpu_read_byte();
+    byte opcode = cpu_read_inst_byte();
     cpu->opcodes[opcode](cpu);
 
     #ifdef CPU_DEBUG_DUMP_ALL
@@ -46,7 +46,7 @@ void cpu_step(cpu_t *cpu) {
 }
 
 word cpu_run(cpu_t *cpu) {
-    cpu_reg16(ip) = cpu_read_word();
+    cpu_reg16(ip) = cpu_read_inst_word();
 
     #ifdef CPU_DEBUG_DUMP_ALL
         printf("\n========START========\n");

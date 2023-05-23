@@ -3,32 +3,32 @@
 package org.toptobes.parsercombinator
 
 import org.toptobes.lang.ast.Symbol
+import org.toptobes.lang.codegen.Segments
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 
 sealed class ParseState<out R> {
     abstract val target: String
     abstract val index: Int
-    abstract val constants: CompilerConstants
 }
 
 typealias SymbolMap = Map<String, Symbol>
 
-data class CompilerConstants(val relativeDataSegStartOffset: Int)
+data class Metadata(val fileIndex: Int)
 
 // TODO: Make a file for pretty printing everything so it doesn't get in the way of actual logic
 data class OkayParseState<out R>(
     val result: R,
     val symbols: SymbolMap,
-    val allocations: ByteArray,
-    override val constants: CompilerConstants,
+    val data: IntArray,
+    val code: IntArray,
+    val meta: Metadata,
     override val target: String,
     override val index: Int,
 ) : ParseState<R>()
 
 data class ErroredParseState(
     val error: String,
-    override val constants: CompilerConstants,
     override val target: String,
     override val index: Int,
 ) : ParseState<Nothing>()
@@ -56,36 +56,27 @@ inline fun <R, R2> ParseState<R>.ifOkay(block: OkayParseState<R>.() -> R2): R2? 
 }
 
 @Suppress("FunctionName", "UNCHECKED_CAST")
-fun <R> UnitParseState(target: String, symbols: SymbolMap, dataSegStart: Int): OkayParseState<R> {
-    return OkayParseState(null as R, symbols, ByteArray(0), CompilerConstants(dataSegStart) ,target, 0)
+fun <R> UnitParseState(target: String, symbols: SymbolMap, meta: Metadata): OkayParseState<R> {
+    return OkayParseState(null as R, symbols, IntArray(0), IntArray(0), meta, target, 0)
 }
 
 fun <R> errored(state: ParseState<*>, error: String): ParseState<R> {
-    return ErroredParseState(error, state.constants, state.target, state.index)
+    return ErroredParseState(error, state.target, state.index)
 }
 
 fun <R> errored(state: ErroredParseState, error: String = state.error): ParseState<R> {
-    return ErroredParseState(error, state.constants, state.target, state.index)
-}
-
-fun <R> success(
-    state: ParseState<*>,
-    result: R,
-    symbols: SymbolMap,
-    allocations: ByteArray,
-    index: Int = state.index
-): ParseState<R> {
-    return OkayParseState(result, symbols, allocations, state.constants, state.target, index)
+    return ErroredParseState(error, state.target, state.index)
 }
 
 fun <R> success(
     state: OkayParseState<*>,
     result: R,
     symbols: SymbolMap = state.symbols,
-    allocations: ByteArray = state.allocations,
+    data: IntArray = state.data,
+    code: IntArray = state.code,
     index: Int = state.index
 ): ParseState<R> {
-    return OkayParseState(result, symbols, allocations, state.constants, state.target, index)
+    return OkayParseState(result, symbols, data, code, state.meta, state.target, index)
 }
 
 fun <R> success(state: OkayParseState<R>): ParseState<R> {

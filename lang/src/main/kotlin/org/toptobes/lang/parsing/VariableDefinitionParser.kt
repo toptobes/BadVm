@@ -33,7 +33,7 @@ val variableDefinition = contextual {
         else -> typeConstructor(name, type, isAllocated)
     } orCrash "Error parsing $name's initializer"
 
-    ctx.addVar(Variable(name, isExport, interp, bytes), isAllocated)
+    ctx.addVar(Variable(name, isExport, interp, bytes, false), isAllocated)
     succeed(DeleteThisNode)
 }
 

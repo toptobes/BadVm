@@ -35,14 +35,14 @@ private val number = (signMulti then any(
     charCode, decimal
 ))..{ it[0] * it[1] }
 
-val word = number
+val litWord = number
     .flatMap { when {
         it in Word.MIN_VALUE..0 -> succeed(it.toWord())
         it.toUInt() in 0u..UWord.MAX_VALUE.toUInt() -> succeed(it.toWord())
         else -> fail("word '$number' !in word.min..uword.max")
     }}
 
-val byte = number
+val litByte = number
     .flatMap { when {
         it in Byte.MIN_VALUE..0 -> succeed(it.toByte())
         it.toUInt() in 0u..UByte.MAX_VALUE.toUInt() -> succeed(it.toByte())
@@ -61,7 +61,7 @@ inline fun <reified T : Interpretation> ContextScope<*>.intrp() = (ctx parse int
 
 val intrp = contextual {
     val intrpName = ctx parse identifier orFail "Not an intrp"
-    val modifiers = ctx parse pool(-betweenSquareBrackets(word)..{ it.toString() }, -str("ptr")) orCrash ""
+    val modifiers = ctx parse pool(-betweenSquareBrackets(litWord)..{ it.toString() }, -str("ptr")) orCrash ""
 
     val isPtr = "ptr" in modifiers
 

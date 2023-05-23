@@ -7,8 +7,8 @@ word myData = [5, it]
 _start:
     mov cx, MY_GRAPH_ADDR
 
-    mov dx, 10
-    mov ex, 10
+    mov dx, 5
+    mov ex, 5
     call GraphNew
 
     mov dx, &myData
@@ -17,7 +17,7 @@ _start:
     add dx, 2
     call GraphAddNode
 
-    add dx, 4
+    add dx, 2
     call GraphAddNode
 
     halt

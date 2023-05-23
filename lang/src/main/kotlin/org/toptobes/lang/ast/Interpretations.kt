@@ -22,8 +22,12 @@ data class Ptr(val intrp: Interpretation) : Interpretation {
     override val size: Int = 2
 }
 
-data class Field<T : Interpretation>(val name: String, val intrp: T, val offset: Int) {
+data class Field<T : Interpretation>(val name: String, val intrp: T, val offset: Int, val adjustMask: BooleanArray) {
     val size get() = intrp.size
+    
+    fun bytes(variable: Variable): ByteArray {
+        return variable.bytes.copyOfRange(offset, offset + size)
+    }
 }
 
 data class TypeIntrp(

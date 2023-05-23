@@ -23,7 +23,7 @@ val label = contextual {
 }
 
 val addr = contextual {
-    ctx parse str("&") orFail "Not byte embedding"
+    ctx parse str("&") orFail "Not an addr"
 
     val (variable, names) = ctx parse variableAndFields orFail "Error parsing fields for addr"
 
@@ -36,7 +36,7 @@ val addr = contextual {
         else -> variable.bytes.toWord()
     }.toBytes()
 
-    succeed(addr)
+    succeed(addr to IS_ADDR)
 }
 
 fun embeddedBytes(size: IntRange = 0..Word.MAX_VALUE, requireEven: Boolean = false) = contextual {
@@ -44,12 +44,12 @@ fun embeddedBytes(size: IntRange = 0..Word.MAX_VALUE, requireEven: Boolean = fal
 
     val (variable, names) = ctx parse variableAndFields orFail "Error parsing fields for embedded bytes"
 
-    val bytes = when (variable.intrp) {
+    val (bytes, mask) = when (variable.intrp) {
         is TypeIntrp -> {
             val field = getField(names, variable.intrp)
-            variable.bytes.copyFromPlus(field.offset, field.size)
+            field.bytes(variable) to field.adjustMask
         }
-        else ->  variable.bytes
+        else -> variable.bytes to variable.addrMask
     }
 
     if (requireEven && bytes.size % 2 != 0) {
@@ -60,18 +60,18 @@ fun embeddedBytes(size: IntRange = 0..Word.MAX_VALUE, requireEven: Boolean = fal
         crash("Expected field size $size, got ${bytes.size}")
     }
 
-    succeed(bytes)
+    succeed(bytes to mask)
 }
 
 fun const(size: Int) = contextual {
     val (variable, names) = ctx parse variableAndFields orFail "Error parsing fields for const"
 
-    val bytes = when (variable.intrp) {
-        is ByteIntrp -> variable.bytes
-        is WordIntrp -> variable.bytes
+    val (bytes, isAddr) = when (variable.intrp) {
+        is ByteIntrp -> variable.bytes to false
+        is WordIntrp -> variable.bytes to variable.isAddr
         is TypeIntrp -> {
             val field = getField(names, variable.intrp)
-            variable.bytes.copyFromPlus(field.offset, field.size)
+            variable.bytes.copyFromPlus(field.offset, field.size) to field.isAddr
         }
         else -> crash("Illegal const usage")
     }
@@ -80,14 +80,14 @@ fun const(size: Int) = contextual {
         crash("Expected size $size, got ${bytes.size}")
     }
 
-    succeed(bytes)
+    succeed(bytes to isAddr)
 }
 
 private val constPtr = contextual {
     ctx parse -str("<") orFail "Not a cast"
     val ptrIntrp = intrp<Ptr>() orCrash "Cast doesn't contain an interpretation"
 
-    ctx.parse(word) {
+    ctx.parse(litWord) {
         ctx parse -str(">") orCrash "Cast missing >"
         succeed(ptrIntrp to it.toBytes())
     }
@@ -164,8 +164,4 @@ private val variableAndFields = contextual {
     
     val variable = ctx.lookup<Variable>(names[0]) ?: crash("${names[0]} is an invalid symbol")
     succeed(variable to names.drop(1))
-}
-
-private fun ByteArray.copyFromPlus(from: Int, plus: Int): ByteArray {
-    return copyOfRange(from, from + plus)
 }

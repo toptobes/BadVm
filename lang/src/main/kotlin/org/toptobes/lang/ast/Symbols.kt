@@ -13,7 +13,7 @@ data class Variable(
     override val name: String,
     override val export: Boolean,
     val intrp: Interpretation,
-    val bytes: ByteArray,
+    val representation: Int,
 ) : Symbol
 
 data class Label(
@@ -28,5 +28,3 @@ data class Macro(
     val args: List<String>,
     val replaceFn: (List<String>) -> String
 ) : Symbol
-
-/* data class TypeInterpretation: Symbol, Interpretation */

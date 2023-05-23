@@ -1,18 +1,18 @@
 package org.toptobes.lang.parsing.constructors
 
 import org.toptobes.lang.parsing.*
-import org.toptobes.lang.utils.Word
+import org.toptobes.lang.utils.Abs8
 import org.toptobes.parsercombinator.*
 import org.toptobes.parsercombinator.impls.*
 
 val singleByte = contextual {
-    val bytes = ctx parse -any(
-        byte..{ byteArrayOf(it) },
+    val (bytes, isAbs) = ctx parse -any(
+        litByte..{ byteArrayOf(it) to Abs8 },
         embeddedBytes(1..1),
         const(1),
     ) orFail "Not a single byte"
 
-    succeed(bytes)
+    succeed(bytes to isAbs)
 }
 
 val byteArray: Parser<ByteArray> get() = contextual {
@@ -53,10 +53,10 @@ private val byteArrayBuilder = contextual {
     }
 
     val bytes = ByteArray(n.toInt()) { initByte ?: it.toByte() }
-    succeed(bytes)
+    succeed(bytes to IS_ABS)
 }
 
 private val string = betweenDoubleQuotes(until(char) { it.ifOkay { result == '"' } ?: false })
-    .map { it.map { chr -> chr.code.toByte() }.toByteArray() }
+    .map { it.map { chr -> chr.code.toByte() }.toByteArray() to IS_ABS }
 
 private fun String.isByte() = toByteOrNull() != null

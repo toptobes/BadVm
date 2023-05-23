@@ -6,30 +6,20 @@ import org.toptobes.lang.utils.toWord
 import org.toptobes.parsercombinator.OkayParseState
 import org.toptobes.parsercombinator.SymbolMap
 
-fun encode(ps: OkayParseState<List<AstNode>>, instructionsStart: Int): Pair<List<Byte>, List<Byte>> {
-    val mappedVars = mapLabels(ps, instructionsStart)
-    val irCode = encodeIr(ps.result, mappedVars)
-    return ps.allocations.toList() to irCode
+data class Segments(
+    val data: IntArray,
+    val code: IntArray,
+)
+
+fun encode(ps: OkayParseState<List<AstNode>>): Segments {
+    val dataSeg = ps.allocations.toList()
+    val (codeSeg, addrs) = encodeIr(ps.result, ps.symbols)
+    return Segments(dataSeg, codeSeg, addrs)
 }
 
-private fun mapLabels(ps: OkayParseState<List<AstNode>>, instructionsStart: Int): SymbolMap {
-    val (ir, symbols) = ps
-
-    val mappedVars = symbols.toMutableMap()
-    var currentAddr = instructionsStart
-
-    ir.forEach { when (it) {
-        is Label -> (mappedVars[it.name] as Label).address = currentAddr.toWord()
-        is Instruction -> currentAddr += it.metadata.size
-        else -> Unit
-    }}
-
-    return mappedVars
-}
-
-private fun encodeIr(ir: List<AstNode>, mappedVars: SymbolMap) = ir.map { node ->
-    if (node === DeleteThisNode || node is Label) {
-        return@map emptyList()
+private fun encodeIr(ir: List<AstNode>, symbols: SymbolMap) = ir.map { node ->
+    if (node === DeleteThisNode) {
+        return@map emptyList() to emptyList()
     }
 
     if (node !is Instruction) {

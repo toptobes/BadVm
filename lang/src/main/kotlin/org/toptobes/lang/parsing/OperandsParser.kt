@@ -10,15 +10,15 @@ import org.toptobes.parsercombinator.impls.*
 import org.toptobes.parsercombinator.rangeTo
 import org.toptobes.parsercombinator.unaryMinus
 
-val reg16 = any(reg16Codes.keys.map(::str))..(::Reg16)
-val reg8  = any(reg8Codes .keys.map(::str))..(::Reg8)
-val ptr   = betweenSquareBrackets(reg16.map { RegPtr(it.regName) })
+val reg16 = any(reg16Codes.keys.map(::str))..{ Reg16(it) to false }
+val reg8  = any(reg8Codes .keys.map(::str))..{ Reg8(it)  to false }
+val ptr   = sequence(-str("@"), any(reg16Codes.keys.map(::str)))..{ RegPtr(it[1]) to false }
 
-val imm16 = singleWord..{ it.toWord() }..(::Imm16)
-val imm8  = singleByte..{ it[0] }..(::Imm8)
+val imm16 = singleWord..{ Mem16(it.first) to it.second }
+val imm8  = singleByte..{ it[0] }..{ Imm8(it) to false }
 
-val mem16 = mem.require { it.first.intrp == WordIntrp }..{ it.second.toWord() }..(::Mem16)
-val mem8  = mem.require { it.first.intrp == ByteIntrp }..{ it.second.toWord() }..(::Mem8)
+val mem16 = mem.require { it.first.intrp == WordIntrp }..{ Mem16(it.second) to it.third }
+val mem8  = mem.require { it.first.intrp == ByteIntrp }..{ Mem8(it.second)  to it.third }
 
 private val lbl = -label..{ Lbl(it.name) }
 

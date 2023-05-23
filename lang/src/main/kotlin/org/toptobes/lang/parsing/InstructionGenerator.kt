@@ -3,7 +3,6 @@
 package org.toptobes.lang.parsing
 
 import org.toptobes.lang.ast.*
-import org.toptobes.lang.utils.reg16Codes
 import org.toptobes.lang.utils.toWord
 import org.toptobes.parsercombinator.*
 import org.toptobes.parsercombinator.impls.*
@@ -44,7 +43,7 @@ val instructions = File("../opcodes")
         val tag = name.lowercase()
         val mnemonic = nameAndArgs.first()
 
-        val args = nameAndArgs.drop(1).reversed().toTypedArray()
+        val args = nameAndArgs.drop(1).toTypedArray()
         val parser = createSingleInstructionParser(nameAndArgs.first(), *args)
 
         val size = 1 + args.fold(0) { size, arg -> size + argSizes[arg]!! }
@@ -91,13 +90,13 @@ private fun createSingleInstructionParser(name: String, vararg args: String) = c
     val parsedArgs = args.foldIndexed(emptyList<Operand>()) { idx, acc, arg ->
         val parser = operandParserMap[arg] ?: crash("No parser found for arg #$idx '$arg' for $name")
 
-        val parsed = (ctx parse parser) ?: fail("Error with arg #${idx + 1} ($arg) for $name")
+        val operand = (ctx parse parser) ?: fail("Error with arg #${idx + 1} ($arg) for $name")
 
         if (idx != args.size - 1) {
             (ctx parse -str(',')) ?: fail("No expected comma")
         }
 
-        acc + parsed
+        acc + operand
     }
 
     succeed(Instruction(name, parsedArgs))

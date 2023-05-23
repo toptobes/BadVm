@@ -7,8 +7,10 @@ import org.toptobes.lang.ast.Symbol
 import org.toptobes.lang.codegen.encode
 import org.toptobes.lang.parsing.codeParser
 import org.toptobes.lang.preprocessor.*
+import org.toptobes.lang.utils.Word
 import org.toptobes.lang.utils.prettyString
 import org.toptobes.lang.utils.toBytesList
+import org.toptobes.lang.utils.toWord
 import org.toptobes.parsercombinator.isOkay
 import java.io.File
 
@@ -27,21 +29,15 @@ fun compile(files: List<File>): List<Byte>? {
 
     val hydratedSourceFiles = mutableSetOf<SourceFile>()
 
-    var dataSegStart = DATA_SEGMENT_START_OFFSET
-    var instructionsStart = dataSegStart
-
-    val bytes = compilationOrder.flatMap { node ->
+    val bytes = compilationOrder.map { node ->
         val imports = resolveImports(node.sfile, hydratedSourceFiles)
-        val (dataSeg, instructions, exports) = compile(node.sfile, imports, dataSegStart, instructionsStart) ?: return null
-        dataSegStart += dataSeg.size
-        instructionsStart = dataSegStart + instructions.size
-
+        val (segments, exports) = compile(node.sfile, imports) ?: return null
         hydratedSourceFiles += node.sfile.copy(exports = exports)
-        dataSeg + instructions
+        segments
     }
 
     val startLabel = hydratedSourceFiles.flatMap { it.exports }.find { it.name == "_start" } as? Label
-    val startAddr = startLabel?.address ?: dataSegStart
+    val startAddr = startLabel?.address ?: 0
 
     return startAddr.toBytesList() + bytes
 }
@@ -121,12 +117,12 @@ private fun buildDependencyGraph(files: List<SourceFile>): List<DependencyNode> 
     }
 }
 
-private fun compile(sfile: SourceFile, imports: Set<Symbol>, dataSegStart: Int, instructionsStart: Int): Triple<List<Byte>, List<Byte>, Set<Symbol>>? {
+private fun compile(sfile: SourceFile, imports: Set<Symbol>): Pair<Segments, Set<Symbol>>? {
     val (newStr, macros) = replaceMacros(sfile.code, imports)
     val labels = findLabels(newStr)
 
     val symbolMap = (imports + macros + labels).associateBy { it.name }
-    val parseResult = codeParser(newStr, symbolMap, dataSegStart)
+    val parseResult = codeParser(newStr, symbolMap)
 
     return if (parseResult.isOkay()) {
 //        println(parseResult.prettyString())

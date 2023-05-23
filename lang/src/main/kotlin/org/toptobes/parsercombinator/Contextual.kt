@@ -1,6 +1,5 @@
 package org.toptobes.parsercombinator
 
-import org.toptobes.lang.DATA_SEGMENT_START_OFFSET
 import org.toptobes.lang.ast.*
 import org.toptobes.lang.utils.toBytes
 
@@ -39,12 +38,12 @@ class Context(initialState: OkayParseState<*>) {
 
     fun addVar(variable: Variable, alloc: Boolean) {
         val actualVar = if (alloc) {
-            val newAddress = state.allocations.size + DATA_SEGMENT_START_OFFSET
+            val relativeAddress = state.allocations.size.toBytes()
 
             val newAllocation = state.allocations + variable.bytes
             state = state.copy(allocations = newAllocation)
 
-            variable.copy(bytes = newAddress.toBytes())
+            variable.copy(bytes = relativeAddress, isAddr = true)
         } else variable
 
         state = state.copy(symbols = state.symbols + actualVar)

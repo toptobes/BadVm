@@ -57,8 +57,8 @@ void stack_push_frame(cpu_t *cpu);
 word stack_pop_frame(cpu_t *cpu);
 
 // -- UTILS --
-#define cpu_read_byte() (mmu_read_byte(cpu->mmap, cpu->registers[ip]++))
-#define cpu_read_word() (cpu->registers[ip] += 2, mmu_read_word(cpu->mmap, cpu->registers[ip] - 2))
+#define cpu_read_inst_byte() (mmu_read_byte(cpu->mmap, cpu->registers[ip]++))
+#define cpu_read_inst_word() (cpu->registers[ip] += 2, mmu_read_word(cpu->mmap, cpu->registers[ip] - 2))
 
 #define high_byte(reg) (reg * 2 + 1)
 #define low_byte(reg) (reg * 2)
